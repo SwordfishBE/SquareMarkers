@@ -69,9 +69,11 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			ticks = 0;
 			SquareMarkersCore.server(server);
 			SquareMarkersCore.onStarted();
-		});
+        });
         ServerLifecycleEvents.SERVER_STOPPED.register(unused -> {
-			OpacHandler.reset();
+			if (isOpacInstalled()) {
+				OpacHandler.reset();
+			}
 			SquareMarkersCore.onDisable();
 		});
 		ServerLevelEvents.LOAD.register((server, level) ->
