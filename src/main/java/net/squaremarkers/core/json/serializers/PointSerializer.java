@@ -1,0 +1,32 @@
+package net.squaremarkers.core.json.serializers;
+
+import com.google.gson.*;
+import net.squaremarkers.core.interfaces.entities.IPoint;
+import net.squaremarkers.core.json.entities.Point;
+
+import java.lang.reflect.Type;
+
+public class PointSerializer implements JsonSerializer<IPoint>, JsonDeserializer<IPoint> {
+
+	@Override
+	public JsonElement serialize(IPoint src, Type typeOfSrc, JsonSerializationContext context) {
+		var obj = new JsonArray();
+		obj.add(src.x());
+		obj.add(src.y());
+		obj.add(src.z());
+		return obj;
+	}
+
+	@Override
+	public IPoint deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+		var arr = json.getAsJsonArray();
+		int x = arr.get(0).getAsInt();
+		int y = arr.get(1).getAsInt();
+		int z = arr.get(2).getAsInt();
+		if (typeOfT.equals(Point.class)) {
+			return new Point(x, y, z);
+		}
+		throw new JsonParseException("Unsupported IPoint type: " + typeOfT.getTypeName());
+	}
+
+}

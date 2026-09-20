@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "id": "squaremarkers",
+  "version": "${version}",
+  "name": "SquareMarkers",
+  "description": "Automatically adds points of interest and claimed areas to squaremap.",
+  "authors": [
+    "SwordfishBE",
+    "Gjorgdy (original Pl3xMarkers)"
+  ],
+  "contact": {
+	"homepage": "https://github.com/SwordfishBE/SquareMarkers",
+    "sources": "https://github.com/SwordfishBE/SquareMarkers",
+    "issues": "https://github.com/SwordfishBE/SquareMarkers/issues",
+    "email": "swordfishbe@locutus.net"
+  },
+  "license": "Apache-2.0",
+  "icon": "assets/squaremarkers/icon.png",
+  "environment": "server",
+  "entrypoints": {
+    "server": [
+      "net.squaremarkers.fabric.SquareMarkers"
+    ]
+  },
+  "mixins": [
+    "squaremarkers.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*",
+    "squaremap": ">=1.4.0"
+  },
+  "suggests": {
+    "openpartiesandclaims": "*"
+  }
+}
