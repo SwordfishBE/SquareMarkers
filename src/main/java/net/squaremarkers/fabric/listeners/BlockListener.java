@@ -16,6 +16,7 @@ import net.squaremarkers.core.layers.SignsMarkerLayer;
 import net.squaremarkers.core.layers.primitive.AreaMarkerLayer;
 import net.squaremarkers.core.objects.InteractionResult;
 import net.squaremarkers.core.registries.Layers;
+import net.squaremarkers.fabric.helpers.PortalHelper;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Nullable;
 import org.jspecify.annotations.NonNull;
@@ -47,6 +48,15 @@ public abstract class BlockListener {
 
 	@Nullable
 	public static InteractionResult onDestroy(@NonNull Level level, @NonNull BlockPos pos, @NonNull BlockState state) {
+		BlockPos portalCenter = PortalHelper.findAffectedNetherPortalCenter(level, pos, state);
+		if (portalCenter != null) {
+			var markerLayer = SquareMarkersCore.api()
+					.getWorld(level.dimension().identifier().toString())
+					.getLayer(NetherPortalMarkerLayer.class, Layers.Keys.NETHER_PORTALS);
+			if (markerLayer != null) {
+				return markerLayer.remove(portalCenter.getX(), portalCenter.getY(), portalCenter.getZ());
+			}
+		}
 		// beacon markers
 		if (state.is(Blocks.BEACON)) {
 			var markerLayer = SquareMarkersCore.api()
@@ -84,7 +94,8 @@ public abstract class BlockListener {
 	}
 
 	@Nullable
-	public static InteractionResult onChange(@NonNull Level level, @NonNull BlockPos pos, @NonNull BlockState state, @NonNull BlockState newState) {
+	public static InteractionResult onChange(@NonNull Level level, @NonNull BlockPos pos, @NonNull BlockState state,
+	                                         @NonNull BlockState newState, @Nullable BlockPos portalCenter) {
 		// beacon
 		if (broke(Blocks.BEACON, state, newState)) {
 			var markerLayer = SquareMarkersCore.api()
@@ -96,14 +107,16 @@ public abstract class BlockListener {
 			return markerLayer.remove(pos.getX(), pos.getY(), pos.getZ());
 		}
 		// nether portal
-		if (broke(Blocks.NETHER_PORTAL, state, newState)) {
+		if (portalCenter != null) {
 			var markerLayer = SquareMarkersCore.api()
 					.getWorld(level.dimension().identifier().toString())
 					.getLayer(NetherPortalMarkerLayer.class, Layers.Keys.NETHER_PORTALS);
 			if (markerLayer == null) {
 				return null;
 			}
-			return markerLayer.remove(pos.getX(), pos.getY(), pos.getZ());
+			InteractionResult result = markerLayer.remove(portalCenter.getX(), portalCenter.getY(), portalCenter.getZ());
+			SquareMarkersCore.debug("Processed Nether portal removal at " + portalCenter + ": " + result.state());
+			return result;
 		}
 		// signs
 		if (broke(BlockTags.SIGNS, state, newState)) {

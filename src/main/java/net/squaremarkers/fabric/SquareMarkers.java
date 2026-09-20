@@ -107,6 +107,7 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			return 0;
 		}
 		SquareMarkersCore.reloadMarkers();
+		LOGGER.info("{} Config reloaded.", LOG_PREFIX);
 		if (source.getPlayer() != null) {
 			source.getPlayer().sendSystemMessage(Component.literal("[SquareMarkers] Config and markers reloaded."));
 		}
