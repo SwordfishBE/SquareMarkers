@@ -57,20 +57,25 @@ public class ConvexHull {
 	}
 
 	private static List<IPoint> cluster(List<IPoint> points) {
-		// Calculate center point
-		int centerX = points.stream().map(IPoint::x).reduce(0, Integer::sum) / points.size();
-		int centerZ = points.stream().map(IPoint::z).reduce(0, Integer::sum) / points.size();
-		var center = points.getFirst().set(centerX, 0, centerZ);
-		// Find the furthest point from center
-		var furthest = points.stream().max(Comparator.comparing(p -> p.distance(center))).orElse(points.getLast());
-		// Check if we are within radius
-		if (furthest.distance(center) <= getMaxRadius()) {
-			return points;
-		} else {
-			// Remove the furthest point and re-cluster if not
+		while (points.size() > 1) {
+			long sumX = 0L;
+			long sumZ = 0L;
+			for (IPoint point : points) {
+				sumX += point.x();
+				sumZ += point.z();
+			}
+			int centerX = (int) (sumX / points.size());
+			int centerZ = (int) (sumZ / points.size());
+			IPoint center = points.getFirst().set(centerX, 0, centerZ);
+			IPoint furthest = points.stream()
+				.max(Comparator.comparingDouble(point -> point.distance(center)))
+				.orElse(points.getLast());
+			if (furthest.distance(center) <= getMaxRadius()) {
+				break;
+			}
 			points.remove(furthest);
-			return cluster(points);
 		}
+		return points;
 	}
 
 	private static List<IPoint> calculateInternal(List<IPoint> points) {

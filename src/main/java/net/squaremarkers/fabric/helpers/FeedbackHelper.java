@@ -43,7 +43,9 @@ public class FeedbackHelper {
 				sendOverlayMessage(player, result.message(), color);
 			}
 		});
-		level.playSound(null, pos, sound, SoundSource.UI, 1.0F, 1.5F);
+		if (SquareMarkersCore.areFeedbackSoundsEnabled()) {
+			level.playSound(null, pos, sound, SoundSource.UI, 1.0F, 1.5F);
+		}
 	}
 
 	public static void sendOverlayMessage(ServerPlayer player, String message, int color) {

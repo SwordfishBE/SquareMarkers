@@ -31,7 +31,7 @@ public interface IPoint extends Comparable<IPoint> {
 	 * @return the distance between the two points, calculated using the Pythagorean theorem, ignoring the y coordinate
 	 */
 	default double distance(@NotNull IPoint other) {
-		return Math.sqrt(Math.pow(x() - other.x(), 2) + Math.pow(z() - other.z(), 2));
+		return Math.hypot((double) x() - other.x(), (double) z() - other.z());
 	}
 
 	/**
@@ -42,7 +42,7 @@ public interface IPoint extends Comparable<IPoint> {
 	 * @return the distance between the two points, calculated using the Pythagorean theorem, ignoring the y coordinate
 	 */
 	default double distance(int x, int z) {
-		return Math.sqrt(Math.pow(x() - x, 2) + Math.pow(z() - z, 2));
+		return Math.hypot((double) x() - x, (double) z() - z);
 	}
 
 	/**
@@ -54,7 +54,10 @@ public interface IPoint extends Comparable<IPoint> {
 	 * @return the distance between the two points, calculated using the Pythagorean theorem, ignoring the y coordinate
 	 */
 	default double distance(int x, int y, int z) {
-		return Math.sqrt(Math.pow(x() - x, 2) + Math.pow(y() - y, 2) + Math.pow(z() - z, 2));
+		double dx = (double) x() - x;
+		double dy = (double) y() - y;
+		double dz = (double) z() - z;
+		return Math.sqrt(dx * dx + dy * dy + dz * dz);
 	}
 
 	/**
@@ -65,9 +68,9 @@ public interface IPoint extends Comparable<IPoint> {
 	 */
 	default IPoint middle(IPoint other) {
 		return this.set(
-				(this.x() + other.x()) / 2,
-				(this.y() + other.y()) / 2,
-				(this.z() + other.z()) / 2
+				(int) (((long) this.x() + other.x()) / 2L),
+				(int) (((long) this.y() + other.y()) / 2L),
+				(int) (((long) this.z() + other.z()) / 2L)
 		);
 	}
 
@@ -82,7 +85,12 @@ public interface IPoint extends Comparable<IPoint> {
 	 */
 	@Override
 	default int compareTo(@NotNull IPoint other) {
-		return (x() - other.x()) + (z() - other.z());
+		int byX = Integer.compare(x(), other.x());
+		if (byX != 0) {
+			return byX;
+		}
+		int byZ = Integer.compare(z(), other.z());
+		return byZ != 0 ? byZ : Integer.compare(y(), other.y());
 	}
 
 	default String serialize() {

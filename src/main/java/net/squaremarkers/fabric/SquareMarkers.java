@@ -16,6 +16,7 @@ import net.squaremarkers.core.interfaces.ILogger;
 import net.squaremarkers.core.json.JsonStorage;
 import net.squaremarkers.core.registries.Layers;
 import net.squaremarkers.fabric.compat.layers.OPACAreaMarkerLayer;
+import net.squaremarkers.fabric.compat.OpacHandler;
 import net.squaremarkers.fabric.listeners.UseItemOnListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,11 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 		    }
 
 		    @Override
+		    public void warn(String message) {
+			    LOGGER.warn("{} {}", LOG_PREFIX, message);
+		    }
+
+		    @Override
 		    public void warn(String message, Throwable throwable) {
 			    LOGGER.warn("{} {}", LOG_PREFIX, message, throwable);
 		    }
@@ -60,12 +66,14 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			(server, flush, force) -> storage.write()
 		);
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+			ticks = 0;
 			SquareMarkersCore.server(server);
 			SquareMarkersCore.onStarted();
 		});
-        ServerLifecycleEvents.SERVER_STOPPED.register(
-            unused -> SquareMarkersCore.onDisable()
-        );
+        ServerLifecycleEvents.SERVER_STOPPED.register(unused -> {
+			OpacHandler.reset();
+			SquareMarkersCore.onDisable();
+		});
 		ServerLevelEvents.LOAD.register((server, level) ->
 			xyz.jpenilla.squaremap.api.SquaremapProvider.get()
 				.getWorldIfEnabled(xyz.jpenilla.squaremap.api.WorldIdentifier.parse(level.dimension().identifier().toString()))
@@ -97,7 +105,9 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			return 0;
 		}
 		SquareMarkersCore.reloadMarkers();
-		source.sendSuccess(() -> Component.literal("[SquareMarkers] Config and markers reloaded."), false);
+		if (source.getPlayer() != null) {
+			source.getPlayer().sendSystemMessage(Component.literal("[SquareMarkers] Config and markers reloaded."));
+		}
 		return 1;
 	}
 

@@ -19,6 +19,7 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -48,6 +49,7 @@ public final class SquaremapHandler {
         if (removed == null) {
             return;
         }
+        removed.values().forEach(MarkerLayer::close);
         SquaremapProvider.get().getWorldIfEnabled(xyz.jpenilla.squaremap.api.WorldIdentifier.parse(worldIdentifier))
             .ifPresent(world -> removed.values().forEach(layer -> {
                 Key key = layerKey(layer.getKey());
@@ -89,9 +91,17 @@ public final class SquaremapHandler {
     public void updateDynamicLayers() {
         layers.values().stream()
             .flatMap(worldLayers -> worldLayers.values().stream())
+            .forEach(MarkerLayer::tick);
+        layers.values().stream()
+            .flatMap(worldLayers -> worldLayers.values().stream())
             .filter(CrossDimensionPlayerMarkerLayer.class::isInstance)
             .map(CrossDimensionPlayerMarkerLayer.class::cast)
             .forEach(CrossDimensionPlayerMarkerLayer::update);
+    }
+
+    public void close() {
+        List.copyOf(layers.keySet()).forEach(this::unregisterWorld);
+        layers.clear();
     }
 
     private void registerIconImage(IconImageAddress address) {

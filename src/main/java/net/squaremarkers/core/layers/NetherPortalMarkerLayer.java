@@ -55,7 +55,7 @@ public class NetherPortalMarkerLayer extends SimpleMarkerLayer {
     @Override
     protected String createTooltip(ISimpleMarker markerEntity) {
         @Language("HTML") var name = markerEntity.getName();
-        return name != null ? name : tooltip;
+        return HtmlHelper.sanitize(name != null ? name : tooltip);
     }
 
     private String buttonText(String worldKey) {

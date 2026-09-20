@@ -1,6 +1,7 @@
 package net.squaremarkers.core.layers.primitive;
 
 import net.squaremarkers.core.SquareMarkersCore;
+import net.squaremarkers.core.helpers.HtmlHelper;
 import net.squaremarkers.core.interfaces.ISimpleMarkerRepository;
 import net.squaremarkers.core.interfaces.entities.ISimpleMarker;
 import net.squaremarkers.core.markers.IconMarkerBuilder;
@@ -146,7 +147,7 @@ public abstract class SimpleMarkerLayer extends StoredMarkerLayer<ISimpleMarker,
     @Language("HTML")
     protected String createTooltip(ISimpleMarker markerEntity) {
         @Language("HTML") var name = markerEntity.getName();
-        return name != null ? name : tooltip;
+        return HtmlHelper.sanitize(name != null ? name : tooltip);
     }
 
     /**

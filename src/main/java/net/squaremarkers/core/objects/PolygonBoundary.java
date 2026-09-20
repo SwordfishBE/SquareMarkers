@@ -23,7 +23,8 @@ public record PolygonBoundary(IPoint min, IPoint max, List<? extends IPoint> ord
 			IPoint pi = orderedPoints.get(i);
 			IPoint pj = orderedPoints.get(j);
 			if (((pi.z() > z) != (pj.z() > z)) &&
-					(x < (pj.x() - pi.x()) * (z - pi.z()) / (pj.z() - pi.z()) + pi.x())) {
+					(x < ((double) pj.x() - pi.x()) * ((double) z - pi.z())
+						/ ((double) pj.z() - pi.z()) + pi.x())) {
 				inside = !inside;
 			}
 		}

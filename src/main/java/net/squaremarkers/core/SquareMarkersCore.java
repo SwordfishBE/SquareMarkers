@@ -6,15 +6,8 @@ import net.squaremarkers.core.interfaces.api.IApi;
 import net.minecraft.server.MinecraftServer;
 
 import java.nio.file.Path;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 public final class SquareMarkersCore {
-    private static final ExecutorService EXECUTOR = new ThreadPoolExecutor(
-        2, 8, 5L, TimeUnit.SECONDS, new LinkedBlockingQueue<>(1000)
-    );
     private static final SquaremapHandler SQUAREMAP_HANDLER = new SquaremapHandler();
     private static final IApi API = new Api();
     private static IStorage storage;
@@ -49,10 +42,13 @@ public final class SquareMarkersCore {
     }
 
     public static void onDisable() {
+        SQUAREMAP_HANDLER.close();
         if (storage != null) {
             storage.close();
         }
-        EXECUTOR.shutdown();
+        storage = null;
+        server = null;
+        reloadConfig = MarkersConfig::reload;
     }
 
     public static void reloadMarkers() {
@@ -82,10 +78,6 @@ public final class SquareMarkersCore {
         return Path.of("config/squaremarkers");
     }
 
-    public static void runParallel(Runnable task) {
-        EXECUTOR.execute(task);
-    }
-
     public static boolean isFeedbackDisabled() {
         return !MarkersConfig.FEEDBACK_MESSAGES_ENABLED && !MarkersConfig.FEEDBACK_SOUNDS_ENABLED;
     }
@@ -107,6 +99,12 @@ public final class SquareMarkersCore {
     public static void warn(String message, Throwable throwable) {
         if (logger != null) {
             logger.warn(message, throwable);
+        }
+    }
+
+    public static void warn(String message) {
+        if (logger != null) {
+            logger.warn(message);
         }
     }
 }

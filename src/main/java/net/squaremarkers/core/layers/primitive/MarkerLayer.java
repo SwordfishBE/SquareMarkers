@@ -9,6 +9,9 @@ import xyz.jpenilla.squaremap.api.MapWorld;
 import xyz.jpenilla.squaremap.api.SimpleLayerProvider;
 import xyz.jpenilla.squaremap.api.marker.Marker;
 
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+
 public abstract class MarkerLayer<T> {
     private final String key;
     private final MapWorld world;
@@ -28,6 +31,14 @@ public abstract class MarkerLayer<T> {
     }
 
     public abstract void load();
+
+    /** Called once per second on the server thread. */
+    public void tick() {
+    }
+
+    /** Releases resources owned by this layer before it is replaced or unloaded. */
+    public void close() {
+    }
 
     public abstract MarkerBuilder<?> createBuilder(T object);
 
@@ -102,7 +113,12 @@ public abstract class MarkerLayer<T> {
     }
 
     private Key toKey(String markerKey) {
-        return Key.of(markerKey.replaceAll("[^A-Za-z0-9._-]", "_"));
+        String sanitized = markerKey.replaceAll("[^A-Za-z0-9._-]", "_");
+        if (sanitized.equals(markerKey)) {
+            return Key.of(sanitized);
+        }
+        String suffix = UUID.nameUUIDFromBytes(markerKey.getBytes(StandardCharsets.UTF_8)).toString();
+        return Key.of(sanitized + "_" + suffix);
     }
 
     public final String getKey() {

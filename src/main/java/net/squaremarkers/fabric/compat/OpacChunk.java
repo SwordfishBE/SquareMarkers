@@ -52,4 +52,9 @@ public record OpacChunk(ChunkPos pos, String playerName, String name, int color)
 		}
 		return false;
 	}
+
+	@Override
+	public int hashCode() {
+		return pos.hashCode();
+	}
 }

@@ -24,7 +24,8 @@ import xyz.jpenilla.squaremap.api.MapWorld;
 
 public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerRepository<? extends IAreaMarker>> {
 
-	private HashMap<String, IBoundary> boundaries;
+	private final Map<String, IBoundary> boundaries = new HashMap<>();
+	private long revision;
 
 	public AreaMarkerLayer(@NotNull MapWorld world) {
 		super(Layers.Keys.AREAS, Layers.Labels.AREAS, world, MarkersConfig.AREA_MARKERS_PRIORITY);
@@ -32,18 +33,16 @@ public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerR
 
     @Override
     public void load() {
-		if (MarkersConfig.FEEDBACK_AREA_ENTER_ENABLED) {
-			boundaries = new HashMap<>();
-		}
+		boundaries.clear();
+		clearMarkers();
 	    getRepository().foreach(this::loadMarker);
+		revision++;
     }
 
 	@Override
 	public MarkerBuilder<?> createBuilder(IAreaMarker area) {
 		super.removeMarker(area);
-		if (boundaries != null) {
-			boundaries.remove(area.getKey());
-		}
+		boundaries.remove(area.getKey());
 		var points = area.getPoints();
 		if (points == null || points.isEmpty()) {
 			return null;
@@ -55,24 +54,14 @@ public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerR
 					.toList();
 			var center = sorted.get(0).middle(sorted.get(1));
 			var radius = (int) Math.round(sorted.get(0).distance(sorted.get(1)) / 2);
-			if (MarkersConfig.FEEDBACK_AREA_ENTER_ENABLED) {
-				boundaries.put(
-						area.getKey(),
-						new CircleBoundary(center, radius, area)
-				);
-			}
+			boundaries.put(area.getKey(), new CircleBoundary(center, radius, area));
 			return AreaMarkerBuilder.newAreaMarker(area.getKey(), center, radius)
 					.fill(area.getColor())
 					.stroke(area.getColor());
 		}
 
 		var orderedPoints = ConvexHull.calculate(new ArrayList<>(area.getPoints()));
-		if (MarkersConfig.FEEDBACK_AREA_ENTER_ENABLED) {
-			boundaries.put(
-				area.getKey(),
-				new PolygonBoundary(area.getMinCorner(), area.getMaxCorner(), orderedPoints, area)
-			);
-		}
+		boundaries.put(area.getKey(), new PolygonBoundary(area.getMinCorner(), area.getMaxCorner(), orderedPoints, area));
 		if (!orderedPoints.isEmpty()) {
 			return AreaMarkerBuilder.newAreaMarker(area.getKey(), orderedPoints)
 					.fill(area.getColor())
@@ -100,7 +89,7 @@ public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerR
 		var popupBuilder = new StringBuilder();
 		popupBuilder.append(HtmlHelper.sanitize(area.getName()));
 		if (MarkersConfig.AREA_MARKERS_SHOW_SIZE) {
-			IBoundary boundary = boundaries == null ? null : boundaries.get(area.getKey());
+			IBoundary boundary = boundaries.get(area.getKey());
 			if (boundary == null) {
 				var points = area.getPoints();
 				if (points.size() == 2 && areInline(points)) {
@@ -116,7 +105,7 @@ public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerR
 			popupBuilder
 					.append("<br><i>")
 					.append(areaFormatted)
-					.append(" b²<i/>");
+					.append(" b²</i>");
 		}
 		return popupBuilder.toString();
 	}
@@ -158,7 +147,8 @@ public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerR
     public InteractionResult addPoint(@Language("HTML") String label, int color, int x, int y, int z) {
 	    var area = getRepository().getOrCreate(label, color);
 	    if (area.addPoint(x, y, z)) {
-		    SquareMarkersCore.runParallel(() -> loadMarker(area));
+		    loadMarker(area);
+			revision++;
 		    if (area.getPoints().size() == 1) {
 			    return InteractionResult.added("Created area: " + label);
 		    }
@@ -173,12 +163,15 @@ public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerR
     public InteractionResult removePoint(@Language("HTML") String label, int color, int x, int y, int z) {
 	    var area = getRepository().get(label, color);
 	    if (area != null && area.removePoint(x, y, z)) {
-		    SquareMarkersCore.runParallel(() -> loadMarker(area));
 		    if (area.isEmpty()) {
 			    super.removeMarker(area);
+				boundaries.remove(area.getKey());
 			    getRepository().remove(label, color);
+				revision++;
 			    return InteractionResult.removed("Removed area: " + label);
 		    }
+			loadMarker(area);
+			revision++;
 		    return InteractionResult.removed("Removed point from area: " + label);
         }
 	    return InteractionResult.skip();
@@ -188,6 +181,10 @@ public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerR
 		return boundaries.values().stream()
 		   .filter(b -> b.contains(x, z))
 		   .findFirst();
+	}
+
+	public long revision() {
+		return revision;
 	}
 
 	@Override

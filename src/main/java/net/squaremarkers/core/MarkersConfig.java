@@ -107,7 +107,7 @@ public final class MarkersConfig {
             AREA_MARKERS_PRIORITY = getInt("marker-settings.areas.priority", 50);
             AREA_MARKERS_MARKERS_ALWAYS_SHOW_NAME = getBoolean("marker-settings.areas.always-show-name", true);
             AREA_MARKERS_SHOW_SIZE = getBoolean("marker-settings.areas.show-area-size", false);
-            AREA_MARKERS_MAX_SIZE = getInt("marker-settings.areas.size", 512);
+            AREA_MARKERS_MAX_SIZE = getInt("marker-settings.areas.size", 512, 1, 30_000_000);
             NETHER_PORTAL_MARKERS_ENABLED = getBoolean("marker-settings.nether-portals.enabled", true);
             NETHER_PORTAL_MARKERS_RENAME = getBoolean("marker-settings.nether-portals.rename", true);
             NETHER_PORTAL_MARKERS_ALWAYS_SHOW_NAME = getBoolean("marker-settings.nether-portals.always-show-name", true);
@@ -124,7 +124,7 @@ public final class MarkersConfig {
             SIGN_MARKERS_FILL_LINES = getBoolean("marker-settings.signs.fill-lines", false);
             LIGHTNING_MARKERS_ENABLED = getBoolean("marker-settings.lightning.enabled", true);
             LIGHTNING_MARKERS_PRIORITY = getInt("marker-settings.lightning.priority", 50);
-            LIGHTNING_MARKERS_LIFETIME = Math.max(0, getInt("marker-settings.lightning.lifetime", 3));
+            LIGHTNING_MARKERS_LIFETIME = getInt("marker-settings.lightning.lifetime", 3, 0, 86_400);
         } catch (IOException exception) {
             SquareMarkersCore.warn("Failed to load config", exception);
         }
@@ -132,22 +132,43 @@ public final class MarkersConfig {
 
     public static boolean getBoolean(String key, boolean fallback) {
         String value = values.get(key);
-        return value == null ? fallback : Boolean.parseBoolean(value);
+        if (value == null) {
+            return fallback;
+        }
+        if (value.equalsIgnoreCase("true")) {
+            return true;
+        }
+        if (value.equalsIgnoreCase("false")) {
+            return false;
+        }
+        SquareMarkersCore.warn("Invalid boolean for '" + key + "': " + value);
+        return fallback;
     }
 
     public static int getInt(String key, int fallback) {
         try {
             return Integer.parseInt(values.getOrDefault(key, Integer.toString(fallback)));
-        } catch (NumberFormatException ignored) {
+        } catch (NumberFormatException exception) {
+            SquareMarkersCore.warn("Invalid integer for '" + key + "': " + values.get(key), exception);
             return fallback;
         }
+    }
+
+    public static int getInt(String key, int fallback, int minimum, int maximum) {
+        int value = getInt(key, fallback);
+        if (value < minimum || value > maximum) {
+            SquareMarkersCore.warn("Value for '" + key + "' must be between " + minimum + " and " + maximum
+                + "; using " + Math.clamp(value, minimum, maximum));
+            return Math.clamp(value, minimum, maximum);
+        }
+        return value;
     }
 
     private static Map<String, String> parse(List<String> lines) {
         Map<String, String> parsed = new HashMap<>();
         List<String> sections = new ArrayList<>();
         for (String rawLine : lines) {
-            String withoutComment = rawLine.split("#", 2)[0];
+            String withoutComment = stripComment(rawLine);
             if (withoutComment.isBlank()) {
                 continue;
             }
@@ -178,6 +199,31 @@ public final class MarkersConfig {
             parsed.put(String.join(".", path), unquote(value));
         }
         return parsed;
+    }
+
+    private static String stripComment(String line) {
+        boolean singleQuoted = false;
+        boolean doubleQuoted = false;
+        boolean escaped = false;
+        for (int index = 0; index < line.length(); index++) {
+            char character = line.charAt(index);
+            if (escaped) {
+                escaped = false;
+                continue;
+            }
+            if (character == '\\' && doubleQuoted) {
+                escaped = true;
+                continue;
+            }
+            if (character == '\'' && !doubleQuoted) {
+                singleQuoted = !singleQuoted;
+            } else if (character == '"' && !singleQuoted) {
+                doubleQuoted = !doubleQuoted;
+            } else if (character == '#' && !singleQuoted && !doubleQuoted) {
+                return line.substring(0, index);
+            }
+        }
+        return line;
     }
 
     private static String unquote(String value) {

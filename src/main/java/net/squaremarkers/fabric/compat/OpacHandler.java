@@ -50,6 +50,16 @@ public class OpacHandler {
 		}
 	}
 
+	public static synchronized void deactivateLayer(OPACAreaMarkerLayer markerLayer) {
+		ACTIVE_LAYERS.remove(markerLayer.worldIdentifier, markerLayer);
+	}
+
+	public static synchronized void reset() {
+		ACTIVE_LAYERS.clear();
+		activeServer = null;
+		listenerRegistered = false;
+	}
+
 	public static boolean isActiveLayer(OPACAreaMarkerLayer markerLayer) {
 		return ACTIVE_LAYERS.get(markerLayer.worldIdentifier) == markerLayer;
 	}
@@ -79,8 +89,11 @@ public class OpacHandler {
 
 	public static Collection<OpacChunk> getClaimedChunks(MinecraftServer server, Identifier world, UUID uuid) {
 		var playerInfo = OpenPACServerAPI.get(server)
-							 .getServerClaimsManager()
-							 .getPlayerInfo(uuid);
+								 .getServerClaimsManager()
+								 .getPlayerInfo(uuid);
+		if (playerInfo == null) {
+			return new ArrayList<>();
+		}
 		var pdc = playerInfo.getDimension(world);
 		if (pdc == null) {
 			return new ArrayList<>();
@@ -93,8 +106,11 @@ public class OpacHandler {
 
 	public static OpacChunk getChunk(MinecraftServer server, UUID uuid, int x, int z) {
 		var playerInfo = OpenPACServerAPI.get(server)
-								 .getServerClaimsManager()
-								 .getPlayerInfo(uuid);
+									 .getServerClaimsManager()
+									 .getPlayerInfo(uuid);
+		if (playerInfo == null) {
+			return null;
+		}
 		return new OpacChunk(new ChunkPos(x, z), playerInfo.getPlayerUsername(), playerInfo.getClaimsName(), playerInfo.getClaimsColor());
 	}
 

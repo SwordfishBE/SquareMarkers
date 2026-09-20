@@ -1,6 +1,7 @@
 package net.squaremarkers.fabric.compat;
 
 import net.squaremarkers.core.interfaces.entities.IPoint;
+import net.minecraft.world.level.ChunkPos;
 import org.intellij.lang.annotations.Language;
 
 import java.util.*;
@@ -12,29 +13,37 @@ public class OpacClaim {
 	public final String name;
 	public final int color;
 
-	public final List<OpacChunk> chunks;
+	private final Map<ChunkPos, OpacChunk> chunks;
 
-	public OpacClaim(@Language("HTML") String name, int color) {
-		key = createKey(name, color);
-		chunks = new ArrayList<>();
+	public OpacClaim(String playerName, @Language("HTML") String name, int color) {
+		key = createKey(playerName);
+		chunks = new HashMap<>();
 		this.name = name;
 		this.color = color;
 	}
 
-	public static String createKey(String name, int color) {
-		return "OpacClaim:" + name + ":" + color;
+	public static String createKey(String playerName) {
+		return "OpacClaim:" + playerName;
 	}
 
 	public void addChunk(OpacChunk chunk) {
-		chunks.add(chunk);
+		chunks.put(chunk.pos(), chunk);
 	}
 
 	public void removeChunk(OpacChunk chunk) {
-		chunks.remove(chunk);
+		chunks.remove(chunk.pos());
 	}
 
 	public boolean removeChunk(int x, int z) {
-		return chunks.removeIf(c -> c.pos().x() == x && c.pos().z() == z);
+		return chunks.remove(new ChunkPos(x, z)) != null;
+	}
+
+	public Collection<OpacChunk> chunks() {
+		return List.copyOf(chunks.values());
+	}
+
+	public boolean isEmpty() {
+		return chunks.isEmpty();
 	}
 
 	public List<List<IPoint>> getPolygons() {
@@ -43,7 +52,7 @@ public class OpacClaim {
 		}
 
 		Map<OpacEdge, Integer> edgeCounts = new HashMap<>();
-		for (OpacChunk chunk : chunks) {
+		for (OpacChunk chunk : chunks.values()) {
 			for (OpacEdge edge : chunk.getEdges()) {
 				edgeCounts.put(edge, edgeCounts.getOrDefault(edge, 0) + 1);
 			}
@@ -77,6 +86,9 @@ public class OpacClaim {
 					break;
 				}
 				List<OpacEdge> connectedEdges = adjacencyMap.get(current);
+				if (connectedEdges == null) {
+					break;
+				}
 				OpacEdge nextEdge = null;
 				for (OpacEdge edge : connectedEdges) {
 					if (availableEdges.contains(edge)) {

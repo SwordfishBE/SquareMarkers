@@ -2,6 +2,7 @@ package net.squaremarkers.core.json.repositories;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
 import com.google.gson.reflect.TypeToken;
 import net.squaremarkers.core.interfaces.IMarkerRepository;
 import net.squaremarkers.core.SquareMarkersCore;
@@ -9,7 +10,15 @@ import net.squaremarkers.core.json.entities.Marker;
 import net.squaremarkers.core.json.entities.Point;
 import net.squaremarkers.core.json.serializers.PointSerializer;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
+import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -22,9 +31,9 @@ public abstract class MarkerRepository<T extends Marker> implements IMarkerRepos
 	public final String worldIdentifier;
 	public final String layerKey;
 	private final Gson gson;
-	private final String folderPath;
-	private final String filePath;
-	private final TypeToken<?> markerClass;
+	private final Path folderPath;
+	private final Path filePath;
+	private final Type markerClass;
 	private final AtomicBoolean dirty = new AtomicBoolean(false);
 	protected HashSet<T> data;
 
@@ -35,10 +44,9 @@ public abstract class MarkerRepository<T extends Marker> implements IMarkerRepos
 				.setPrettyPrinting()
 				.registerTypeAdapter(Point.class, new PointSerializer())
 				.create();
-		folderPath = worldRepository.getStorage().getConfigPath() + "/" + formatWorldIdentifier(
-				worldRepository.worldIdentifier);
-		filePath = folderPath + "/" + layerKey + ".json";
-		markerClass = TypeToken.getParameterized(HashSet.class, clazz);
+		folderPath = Path.of(worldRepository.getStorage().getConfigPath(), formatWorldIdentifier(worldRepository.worldIdentifier));
+		filePath = folderPath.resolve(layerKey + ".json");
+		markerClass = TypeToken.getParameterized(HashSet.class, clazz).getType();
 		data = new HashSet<>();
 		read();
 	}
@@ -70,41 +78,36 @@ public abstract class MarkerRepository<T extends Marker> implements IMarkerRepos
 	}
 
 	private boolean fileExists() {
-		var file = new File(filePath);
-		return file.exists();
+		return Files.isRegularFile(filePath);
 	}
 
-	private boolean invalidFile() throws IOException {
-		// Ensure the folder exists and is a directory
-		var folder = new File(folderPath);
-		if ((!folder.exists() && !folder.mkdirs()) || !folder.isDirectory()) {
-			return true; // could not create folders -> invalid
+	private void ensureStorageDirectory() throws IOException {
+		Files.createDirectories(folderPath);
+		if (!Files.isDirectory(folderPath)) {
+			throw new IOException("Storage path is not a directory: " + folderPath);
 		}
-		// Ensure the file exists and is a file
-		var file = new File(filePath);
-		if (!file.exists()) {
-			// make sure parent exists (defensive)
-			var parent = file.getParentFile();
-			if (parent != null && !parent.exists()) {
-				if (!parent.mkdirs()) {
-					return true;
-				}
-			}
-			return !file.createNewFile();
+		if (Files.exists(filePath) && !Files.isRegularFile(filePath)) {
+			throw new IOException("Marker path is not a file: " + filePath);
 		}
-		return !file.isFile();
 	}
 
-	final public void write() {
+	final public synchronized void write() {
 		if (!dirty.get()) {
 			return;
 		}
 		try {
-			if (invalidFile() || data == null) {
+			if (data == null) {
 				return;
 			}
-			try (Writer writer = new FileWriter(filePath, false)) {
+			ensureStorageDirectory();
+			Path temporaryFile = filePath.resolveSibling(filePath.getFileName() + ".tmp");
+			try (Writer writer = Files.newBufferedWriter(temporaryFile, StandardCharsets.UTF_8)) {
 				gson.toJson(data, writer);
+			}
+			try {
+				Files.move(temporaryFile, filePath, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+			} catch (AtomicMoveNotSupportedException ignored) {
+				Files.move(temporaryFile, filePath, StandardCopyOption.REPLACE_EXISTING);
 			}
 			dirty.set(false);
 		} catch (IOException exception) {
@@ -112,7 +115,7 @@ public abstract class MarkerRepository<T extends Marker> implements IMarkerRepos
 		}
 	}
 
-	final public void read() {
+	final public synchronized void read() {
 		// only read if not dirty
 		if (dirty.get()) {
 			return;
@@ -121,18 +124,31 @@ public abstract class MarkerRepository<T extends Marker> implements IMarkerRepos
 			if (!fileExists()) {
 				return;
 			}
-			BufferedReader bufferedReader = new BufferedReader(new FileReader(filePath));
-			//noinspection unchecked
-			HashSet<T> data = (HashSet<T>) gson.fromJson(bufferedReader, markerClass);
+			HashSet<T> data;
+			try (Reader reader = Files.newBufferedReader(filePath, StandardCharsets.UTF_8)) {
+				data = gson.fromJson(reader, markerClass);
+			}
 			if (data == null) {
 				return;
 			}
 			assert data instanceof HashSet<T>;
 			data.forEach(marker -> marker.SetContext(this));
 			this.data = data;
-			bufferedReader.close();
+		} catch (JsonParseException exception) {
+			backupCorruptFile(exception);
 		} catch (IOException exception) {
 			SquareMarkersCore.warn("Failed to read marker data from " + filePath, exception);
+		}
+	}
+
+	private void backupCorruptFile(JsonParseException cause) {
+		Path backup = filePath.resolveSibling(filePath.getFileName() + ".broken-" + System.currentTimeMillis());
+		try {
+			Files.move(filePath, backup, StandardCopyOption.REPLACE_EXISTING);
+			SquareMarkersCore.warn("Invalid marker data moved to " + backup, cause);
+		} catch (IOException moveException) {
+			moveException.addSuppressed(cause);
+			SquareMarkersCore.warn("Invalid marker data could not be backed up: " + filePath, moveException);
 		}
 	}
 
