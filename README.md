@@ -23,6 +23,7 @@ It is a Fabric-only port of [Pl3xMarkers](https://modrinth.com/plugin/pl3xmarker
 - Optional Open Parties and Claims claim areas
 - Configurable layer priorities, labels, feedback, and individual marker types
 - Fabric Essentials and Essential Commands warps
+- Waystones markers
 
 ---
 
