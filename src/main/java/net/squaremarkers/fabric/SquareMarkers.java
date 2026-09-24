@@ -17,6 +17,8 @@ import net.squaremarkers.core.json.JsonStorage;
 import net.squaremarkers.core.registries.Layers;
 import net.squaremarkers.fabric.compat.layers.OPACAreaMarkerLayer;
 import net.squaremarkers.fabric.compat.OpacHandler;
+import net.squaremarkers.fabric.compat.warps.WarpHandler;
+import net.squaremarkers.fabric.compat.warps.WarpMarkerLayer;
 import net.squaremarkers.fabric.listeners.UseItemOnListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +44,9 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 		// register layers
 		if (isOpacInstalled()) {
 			Layers.register(OPACAreaMarkerLayer::new, unused -> isOpacEnabled());
+		}
+		for (WarpHandler.Source source : WarpHandler.Source.values()) {
+			Layers.register(world -> new WarpMarkerLayer(world, source), unused -> source.enabled());
 		}
 		// initialize core
 	    storage = new JsonStorage("config/squaremarkers");
@@ -71,6 +76,7 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			SquareMarkersCore.onStarted();
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(unused -> {
+			WarpHandler.reset();
 			if (isOpacInstalled()) {
 				OpacHandler.reset();
 			}
@@ -87,6 +93,7 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			if (++ticks % 20 == 0) {
 				SquareMarkersCore.squaremapHandler().updateDynamicLayers();
+				WarpHandler.refresh();
 			}
 		});
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(

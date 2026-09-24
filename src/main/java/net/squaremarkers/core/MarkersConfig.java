@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -55,6 +57,12 @@ public final class MarkersConfig {
             enabled: true
             priority: 40
             always-show-name: true
+          fabric-essentials-warps:
+            enabled: true
+            priority: 50
+          essential-commands-warps:
+            enabled: true
+            priority: 50
         """;
 
     private static Map<String, String> values = Map.of();
@@ -97,7 +105,12 @@ public final class MarkersConfig {
             if (Files.notExists(path)) {
                 Files.writeString(path, DEFAULT_CONFIG, StandardCharsets.UTF_8);
             }
-            values = parse(Files.readAllLines(path, StandardCharsets.UTF_8));
+            String config = Files.readString(path, StandardCharsets.UTF_8);
+            String migrated = WarpConfigMigration.addMissingOptions(config);
+            if (!migrated.equals(config)) {
+                writeMigratedConfig(path, migrated);
+            }
+            values = parse(migrated.lines().toList());
             FEEDBACK_MESSAGES_ENABLED = getBoolean("settings.feedback.messages", true);
             FEEDBACK_SOUNDS_ENABLED = getBoolean("settings.feedback.sound", true);
             FEEDBACK_AREA_ENTER_ENABLED = getBoolean("settings.feedback.area-enter", true);
@@ -127,6 +140,20 @@ public final class MarkersConfig {
             LIGHTNING_MARKERS_LIFETIME = getInt("marker-settings.lightning.lifetime", 3, 0, 86_400);
         } catch (IOException exception) {
             SquareMarkersCore.warn("Failed to load config", exception);
+        }
+    }
+
+    private static void writeMigratedConfig(Path path, String config) throws IOException {
+        Path temporary = Files.createTempFile(path.getParent(), "config.yml.", ".tmp");
+        try {
+            Files.writeString(temporary, config, StandardCharsets.UTF_8);
+            try {
+                Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+            } catch (AtomicMoveNotSupportedException exception) {
+                Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            Files.deleteIfExists(temporary);
         }
     }
 

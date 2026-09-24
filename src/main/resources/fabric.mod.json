@@ -33,6 +33,8 @@
     "squaremap": ">=1.4.0"
   },
   "suggests": {
-    "openpartiesandclaims": "*"
+    "openpartiesandclaims": "*",
+    "fabric-essentials": "*",
+    "essential_commands": "*"
   }
 }
