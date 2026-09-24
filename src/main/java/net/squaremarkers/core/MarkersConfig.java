@@ -63,6 +63,11 @@ public final class MarkersConfig {
           essential-commands-warps:
             enabled: true
             priority: 50
+          waystones:
+            enabled: true
+            priority: 50
+            include-sharestones: true
+            include-undiscovered: false
         """;
 
     private static Map<String, String> values = Map.of();

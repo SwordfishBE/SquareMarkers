@@ -3,7 +3,7 @@ package net.squaremarkers.core;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Adds new warp settings without reformatting or replacing existing configuration. */
+/** Adds optional integration settings without reformatting or replacing existing configuration. */
 final class WarpConfigMigration {
     private WarpConfigMigration() {
     }
@@ -11,15 +11,20 @@ final class WarpConfigMigration {
     static String addMissingOptions(String config) {
         String newline = config.contains("\r\n") ? "\r\n" : config.contains("\n") ? "\n"
             : config.contains("\r") ? "\r" : "\n";
-        String updated = addSection(config, "fabric-essentials-warps", newline);
-        return addSection(updated, "essential-commands-warps", newline);
+        String updated = addSection(config, "fabric-essentials-warps", newline, List.of(
+            new Option("enabled", "true"), new Option("priority", "50")));
+        updated = addSection(updated, "essential-commands-warps", newline, List.of(
+            new Option("enabled", "true"), new Option("priority", "50")));
+        return addSection(updated, "waystones", newline, List.of(
+            new Option("enabled", "true"), new Option("priority", "50"),
+            new Option("include-sharestones", "true"), new Option("include-undiscovered", "false")));
     }
 
-    private static String addSection(String config, String section, String newline) {
+    private static String addSection(String config, String section, String newline, List<Option> options) {
         List<Line> lines = lines(config);
         int parent = findHeader(lines, 0, lines.size(), 0, "marker-settings");
         if (parent < 0) {
-            String block = "marker-settings:" + newline + sectionBlock(section, newline);
+            String block = "marker-settings:" + newline + sectionBlock(section, options, newline);
             return insert(config, config.length(), block, newline);
         }
 
@@ -27,25 +32,31 @@ final class WarpConfigMigration {
         int child = findHeader(lines, parent + 1, parentEnd, 2, section);
         if (child < 0) {
             int offset = parentEnd == lines.size() ? config.length() : lines.get(parentEnd).start();
-            return insert(config, offset, sectionBlock(section, newline), newline);
+            return insert(config, offset, sectionBlock(section, options, newline), newline);
         }
 
         int childEnd = nextSection(lines, child + 1, 2);
-        boolean enabled = findKey(lines, child + 1, childEnd, 4, "enabled");
-        boolean priority = findKey(lines, child + 1, childEnd, 4, "priority");
-        if (enabled && priority) {
+        StringBuilder missing = new StringBuilder();
+        for (Option option : options) {
+            if (!findKey(lines, child + 1, childEnd, 4, option.key())) {
+                missing.append("    ").append(option.key()).append(": ")
+                    .append(option.defaultValue()).append(newline);
+            }
+        }
+        if (missing.isEmpty()) {
             return config;
         }
-        String missing = (enabled ? "" : "    enabled: true" + newline)
-            + (priority ? "" : "    priority: 50" + newline);
         int offset = childEnd == lines.size() ? config.length() : lines.get(childEnd).start();
-        return insert(config, offset, missing, newline);
+        return insert(config, offset, missing.toString(), newline);
     }
 
-    private static String sectionBlock(String section, String newline) {
-        return "  " + section + ":" + newline
-            + "    enabled: true" + newline
-            + "    priority: 50" + newline;
+    private static String sectionBlock(String section, List<Option> options, String newline) {
+        StringBuilder block = new StringBuilder("  ").append(section).append(":").append(newline);
+        for (Option option : options) {
+            block.append("    ").append(option.key()).append(": ")
+                .append(option.defaultValue()).append(newline);
+        }
+        return block.toString();
     }
 
     private static String insert(String config, int offset, String addition, String newline) {
@@ -120,5 +131,8 @@ final class WarpConfigMigration {
     }
 
     private record Line(int start, int indent, String text) {
+    }
+
+    private record Option(String key, String defaultValue) {
     }
 }

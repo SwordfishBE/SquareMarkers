@@ -13,7 +13,8 @@ public class Icons {
             new IconImageAddress("/assets/squaremarkers/icons/", Keys.NETHER_PORTAL, "png"),
             new IconImageAddress("/assets/squaremarkers/icons/", Keys.SIGN, "png"),
             new IconImageAddress("/assets/squaremarkers/icons/", Keys.LIGHTNING, "png"),
-            new IconImageAddress("/assets/squaremarkers/icons/", Keys.WARP, "png")
+            new IconImageAddress("/assets/squaremarkers/icons/", Keys.WARP, "png"),
+            new IconImageAddress("/assets/squaremarkers/icons/", Keys.WARP_STONE, "png")
     );
 
     public static class Keys {
@@ -24,6 +25,7 @@ public class Icons {
         public static final String SIGN = "squaremarkers_sign";
         public static final String LIGHTNING = "squaremarkers_lightning";
         public static final String WARP = "squaremarkers_warp";
+        public static final String WARP_STONE = "squaremarkers_warp_stone";
         public static final String CROSS_DIMENSION_PLAYER = "squaremarkers_cross_dimension_player";
     }
 

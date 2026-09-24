@@ -35,6 +35,7 @@
   "suggests": {
     "openpartiesandclaims": "*",
     "fabric-essentials": "*",
-    "essential_commands": "*"
+    "essential_commands": "*",
+    "waystones": "*"
   }
 }

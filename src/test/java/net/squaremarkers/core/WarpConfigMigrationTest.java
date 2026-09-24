@@ -20,6 +20,9 @@ class WarpConfigMigrationTest {
             + "    enabled: true\r\n    priority: 50\r\n"));
         assertTrue(updated.contains("  essential-commands-warps:\r\n"
             + "    enabled: true\r\n    priority: 50\r\n"));
+        assertTrue(updated.contains("  waystones:\r\n"
+            + "    enabled: true\r\n    priority: 50\r\n"
+            + "    include-sharestones: true\r\n    include-undiscovered: false\r\n"));
         assertTrue(updated.endsWith("other:\r\n  custom: yes\r\n"));
         assertEquals(updated, WarpConfigMigration.addMissingOptions(updated));
     }
@@ -45,6 +48,19 @@ class WarpConfigMigrationTest {
 
         assertTrue(updated.startsWith(existing));
         assertTrue(updated.contains("marker-settings:\n  fabric-essentials-warps:"));
+        assertEquals(updated, WarpConfigMigration.addMissingOptions(updated));
+    }
+
+    @Test
+    void preservesPartiallyConfiguredWaystones() {
+        String existing = "marker-settings:\n"
+            + "  waystones:\n    enabled: false\n    include-undiscovered: true\n";
+
+        String updated = WarpConfigMigration.addMissingOptions(existing);
+
+        assertTrue(updated.contains("waystones:\n    enabled: false\n"
+            + "    include-undiscovered: true\n"
+            + "    priority: 50\n    include-sharestones: true\n"));
         assertEquals(updated, WarpConfigMigration.addMissingOptions(updated));
     }
 }

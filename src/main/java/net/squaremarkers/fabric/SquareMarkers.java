@@ -19,6 +19,8 @@ import net.squaremarkers.fabric.compat.layers.OPACAreaMarkerLayer;
 import net.squaremarkers.fabric.compat.OpacHandler;
 import net.squaremarkers.fabric.compat.warps.WarpHandler;
 import net.squaremarkers.fabric.compat.warps.WarpMarkerLayer;
+import net.squaremarkers.fabric.compat.waystones.WaystoneMarkerLayer;
+import net.squaremarkers.fabric.compat.waystones.WaystonesHandler;
 import net.squaremarkers.fabric.listeners.UseItemOnListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +49,10 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 		}
 		for (WarpHandler.Source source : WarpHandler.Source.values()) {
 			Layers.register(world -> new WarpMarkerLayer(world, source), unused -> source.enabled());
+		}
+		if (WaystonesHandler.installed()) {
+			WaystonesHandler.register();
+			Layers.register(WaystoneMarkerLayer::new, unused -> WaystonesHandler.enabled());
 		}
 		// initialize core
 	    storage = new JsonStorage("config/squaremarkers");
@@ -77,6 +83,9 @@ public class SquareMarkers implements DedicatedServerModInitializer {
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(unused -> {
 			WarpHandler.reset();
+			if (WaystonesHandler.installed()) {
+				WaystonesHandler.reset();
+			}
 			if (isOpacInstalled()) {
 				OpacHandler.reset();
 			}
@@ -91,6 +100,9 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			SquareMarkersCore.squaremapHandler().unregisterWorld(level.dimension().identifier().toString())
 		);
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
+			if (WaystonesHandler.installed()) {
+				WaystonesHandler.flushPending(server);
+			}
 			if (++ticks % 20 == 0) {
 				SquareMarkersCore.squaremapHandler().updateDynamicLayers();
 				WarpHandler.refresh();
@@ -114,6 +126,9 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			return 0;
 		}
 		SquareMarkersCore.reloadMarkers();
+		if (WaystonesHandler.installed()) {
+			WaystonesHandler.refresh(SquareMarkersCore.server());
+		}
 		LOGGER.info("{} Config reloaded.", LOG_PREFIX);
 		if (source.getPlayer() != null) {
 			source.getPlayer().sendSystemMessage(Component.literal("[SquareMarkers] Config and markers reloaded."));
