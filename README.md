@@ -21,9 +21,9 @@ It is a Fabric-only port of [Pl3xMarkers](https://modrinth.com/plugin/pl3xmarker
 - Sign markers
 - Cross-dimensional player markers
 - Optional Open Parties and Claims claim areas
+- Optional live warp markers from Fabric Essentials, Essential Commands, and HuskHomes
+- Optional live Waystones markers, including sharestones
 - Configurable layer priorities, labels, feedback, and individual marker types
-- Fabric Essentials and Essential Commands warps
-- Waystones markers
 
 ---
 
@@ -56,6 +56,47 @@ The configuration is generated at `config/squaremarkers/config.yml` on first sta
 The public squaremap API does not expose permanent always-visible labels.
 Therefore `always-show-name` and `always-show-text` use squaremap hover tooltips.
 Click popups remain available where applicable.
+
+Warp markers appear in separate layers for Fabric Essentials, Essential Commands, and HuskHomes.
+All three integrations are enabled by default when the matching mod is installed.
+Fabric Essentials and Essential Commands changes are reflected within about one second.
+HuskHomes changes use its event callbacks and an asynchronous database refresh, with a five-minute reconciliation for changes outside its commands.
+Existing configuration files automatically receive missing warp options without changing other settings. 
+To disable an integration or change its layer priority, edit these entries under `marker-settings` in
+`config/squaremarkers/config.yml`:
+
+Important for HuskHomes: squaremap layers are visible to all map viewers. 
+If you use permission-restricted warps whose locations must stay private, set `marker-settings.huskhomes-warps.enabled` to `false`; squaremap cannot apply per-player warp permissions here.
+
+```yaml
+  fabric-essentials-warps:
+    enabled: true
+    priority: 50
+  essential-commands-warps:
+    enabled: true
+    priority: 50
+  huskhomes-warps:
+    enabled: true
+    priority: 50
+```
+
+When [Waystones](https://github.com/TwelveIterations/Waystones) is installed, its waystones appear in a separate layer using the `warp_stone.png` icon. 
+New, renamed, and removed stones update through Waystones events; no recurring Waystones scan runs.
+Sharestones are included by default. 
+Unnamed or undiscovered waystones are hidden by default. 
+Configure this integration under
+`marker-settings`:
+
+```yaml
+  waystones:
+    enabled: true
+    priority: 50
+    include-sharestones: true
+    include-undiscovered: false
+```
+
+Existing configuration files receive missing options automatically while retaining their current values. 
+Waystones itself and its dependencies are optional; SquareMarkers does not need them when this integration is unused.
 
 ---
 
