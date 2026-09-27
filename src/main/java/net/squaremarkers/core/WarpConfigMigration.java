@@ -15,6 +15,8 @@ final class WarpConfigMigration {
             new Option("enabled", "true"), new Option("priority", "50")));
         updated = addSection(updated, "essential-commands-warps", newline, List.of(
             new Option("enabled", "true"), new Option("priority", "50")));
+        updated = addSection(updated, "huskhomes-warps", newline, List.of(
+            new Option("enabled", "true"), new Option("priority", "50")));
         return addSection(updated, "waystones", newline, List.of(
             new Option("enabled", "true"), new Option("priority", "50"),
             new Option("include-sharestones", "true"), new Option("include-undiscovered", "false")));

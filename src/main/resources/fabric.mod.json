@@ -36,6 +36,7 @@
     "openpartiesandclaims": "*",
     "fabric-essentials": "*",
     "essential_commands": "*",
-    "waystones": "*"
+    "waystones": "*",
+    "huskhomes": "*"
   }
 }

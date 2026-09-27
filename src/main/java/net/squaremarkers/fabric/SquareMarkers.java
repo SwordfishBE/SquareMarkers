@@ -18,17 +18,19 @@ import net.squaremarkers.core.registries.Layers;
 import net.squaremarkers.fabric.compat.layers.OPACAreaMarkerLayer;
 import net.squaremarkers.fabric.compat.OpacHandler;
 import net.squaremarkers.fabric.compat.warps.WarpHandler;
+import net.squaremarkers.fabric.compat.warps.HuskHomesWarpHandler;
 import net.squaremarkers.fabric.compat.warps.WarpMarkerLayer;
 import net.squaremarkers.fabric.compat.waystones.WaystoneMarkerLayer;
 import net.squaremarkers.fabric.compat.waystones.WaystonesHandler;
 import net.squaremarkers.fabric.listeners.UseItemOnListener;
+import net.squaremarkers.fabric.util.ModrinthUpdateChecker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("unused") // Called by fabric
 public class SquareMarkers implements DedicatedServerModInitializer {
 
-	private static final String LOG_PREFIX = "[SquareMarkers]";
+	public static final String LOG_PREFIX = "[SquareMarkers]";
 	public static final Logger LOGGER = LoggerFactory.getLogger(SquareMarkers.class);
 	private JsonStorage storage;
 	private int ticks;
@@ -49,6 +51,9 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 		}
 		for (WarpHandler.Source source : WarpHandler.Source.values()) {
 			Layers.register(world -> new WarpMarkerLayer(world, source), unused -> source.enabled());
+		}
+		if (HuskHomesWarpHandler.installed()) {
+			HuskHomesWarpHandler.register();
 		}
 		if (WaystonesHandler.installed()) {
 			WaystonesHandler.register();
@@ -81,7 +86,15 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			SquareMarkersCore.server(server);
 			SquareMarkersCore.onStarted();
         });
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            if (HuskHomesWarpHandler.installed()) {
+                HuskHomesWarpHandler.start(server);
+            }
+        });
         ServerLifecycleEvents.SERVER_STOPPED.register(unused -> {
+			if (HuskHomesWarpHandler.installed()) {
+				HuskHomesWarpHandler.reset();
+			}
 			WarpHandler.reset();
 			if (WaystonesHandler.installed()) {
 				WaystonesHandler.reset();
@@ -107,6 +120,9 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 				SquareMarkersCore.squaremapHandler().updateDynamicLayers();
 				WarpHandler.refresh();
 			}
+			if (ticks % 6000 == 0 && HuskHomesWarpHandler.installed()) {
+				HuskHomesWarpHandler.refreshAsync();
+			}
 		});
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
 			Commands.literal("squaremarkers")
@@ -117,6 +133,11 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
 			.orElse("unknown");
 		LOGGER.info("{} Mod initialized. Version: {}", LOG_PREFIX, version);
+		String minecraftVersion = FabricLoader.getInstance().getModContainer("minecraft")
+			.map(container -> container.getMetadata().getVersion().getFriendlyString())
+			.orElse("unknown");
+		ServerLifecycleEvents.SERVER_STARTED.register(server ->
+			ModrinthUpdateChecker.checkOnceAsync(version, minecraftVersion));
     }
 
 	private static int reload(CommandSourceStack source) {
@@ -126,6 +147,9 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			return 0;
 		}
 		SquareMarkersCore.reloadMarkers();
+		if (HuskHomesWarpHandler.installed()) {
+			HuskHomesWarpHandler.reload();
+		}
 		if (WaystonesHandler.installed()) {
 			WaystonesHandler.refresh(SquareMarkersCore.server());
 		}

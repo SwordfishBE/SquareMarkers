@@ -20,6 +20,8 @@ class WarpConfigMigrationTest {
             + "    enabled: true\r\n    priority: 50\r\n"));
         assertTrue(updated.contains("  essential-commands-warps:\r\n"
             + "    enabled: true\r\n    priority: 50\r\n"));
+        assertTrue(updated.contains("  huskhomes-warps:\r\n"
+            + "    enabled: true\r\n    priority: 50\r\n"));
         assertTrue(updated.contains("  waystones:\r\n"
             + "    enabled: true\r\n    priority: 50\r\n"
             + "    include-sharestones: true\r\n    include-undiscovered: false\r\n"));
@@ -61,6 +63,19 @@ class WarpConfigMigrationTest {
         assertTrue(updated.contains("waystones:\n    enabled: false\n"
             + "    include-undiscovered: true\n"
             + "    priority: 50\n    include-sharestones: true\n"));
+        assertEquals(updated, WarpConfigMigration.addMissingOptions(updated));
+    }
+
+    @Test
+    void preservesExistingHuskHomesWarpChoices() {
+        String existing = "marker-settings:\n"
+            + "  huskhomes-warps:\n    enabled: false\n"
+            + "other:\n  custom: yes\n";
+
+        String updated = WarpConfigMigration.addMissingOptions(existing);
+
+        assertTrue(updated.contains("huskhomes-warps:\n    enabled: false\n    priority: 50\n"));
+        assertTrue(updated.endsWith("other:\n  custom: yes\n"));
         assertEquals(updated, WarpConfigMigration.addMissingOptions(updated));
     }
 }

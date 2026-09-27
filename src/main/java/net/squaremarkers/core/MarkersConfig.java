@@ -63,6 +63,9 @@ public final class MarkersConfig {
           essential-commands-warps:
             enabled: true
             priority: 50
+          huskhomes-warps:
+            enabled: true
+            priority: 50
           waystones:
             enabled: true
             priority: 50

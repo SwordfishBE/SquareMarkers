@@ -14,26 +14,47 @@ import java.util.Map;
 public final class WarpHandler {
     public enum Source {
         FABRIC_ESSENTIALS("fabric-essentials", Layers.Keys.FABRIC_ESSENTIALS_WARPS, "Fabric Essentials"),
-        ESSENTIAL_COMMANDS("essential_commands", Layers.Keys.ESSENTIAL_COMMANDS_WARPS, "Essential Commands");
+        ESSENTIAL_COMMANDS("essential_commands", Layers.Keys.ESSENTIAL_COMMANDS_WARPS, "Essential Commands"),
+        HUSKHOMES("huskhomes", Layers.Keys.HUSKHOMES_WARPS, "HuskHomes");
 
         private final String modId;
         private final String layerKey;
         private final String label;
+        private final boolean installed;
 
         Source(String modId, String layerKey, String label) {
             this.modId = modId;
             this.layerKey = layerKey;
             this.label = label;
+            this.installed = FabricLoader.getInstance().isModLoaded(modId);
         }
 
         public String label() {
             return label;
         }
 
+        public boolean installed() {
+            return installed;
+        }
+
+        public String layerKey() {
+            return layerKey;
+        }
+
+        public int priority() {
+            return switch (this) {
+                case FABRIC_ESSENTIALS -> FabricMarkersConfig.FABRIC_ESSENTIALS_WARPS_PRIORITY;
+                case ESSENTIAL_COMMANDS -> FabricMarkersConfig.ESSENTIAL_COMMANDS_WARPS_PRIORITY;
+                case HUSKHOMES -> FabricMarkersConfig.HUSKHOMES_WARPS_PRIORITY;
+            };
+        }
+
         public boolean enabled() {
-            return FabricLoader.getInstance().isModLoaded(modId) && (this == FABRIC_ESSENTIALS
-                ? FabricMarkersConfig.FABRIC_ESSENTIALS_WARPS_ENABLED
-                : FabricMarkersConfig.ESSENTIAL_COMMANDS_WARPS_ENABLED);
+            return installed && switch (this) {
+                case FABRIC_ESSENTIALS -> FabricMarkersConfig.FABRIC_ESSENTIALS_WARPS_ENABLED;
+                case ESSENTIAL_COMMANDS -> FabricMarkersConfig.ESSENTIAL_COMMANDS_WARPS_ENABLED;
+                case HUSKHOMES -> FabricMarkersConfig.HUSKHOMES_WARPS_ENABLED;
+            };
         }
     }
 
@@ -53,6 +74,9 @@ public final class WarpHandler {
                 SNAPSHOTS.remove(source);
                 continue;
             }
+            if (source == Source.HUSKHOMES) {
+                continue; // HuskHomes has an asynchronous database API and its own refresh schedule.
+            }
             try {
                 Map<String, WarpPoint> next = source == Source.FABRIC_ESSENTIALS
                     ? WarpReaders.fabricEssentials() : WarpReaders.essentialCommands();
@@ -60,17 +84,7 @@ public final class WarpHandler {
                     continue;
                 }
                 FAILED.remove(source);
-                if (next.equals(current(source))) {
-                    continue;
-                }
-                SNAPSHOTS.put(source, Map.copyOf(next));
-                SquaremapProvider.get().mapWorlds().forEach(world -> {
-                    WarpMarkerLayer layer = SquareMarkersCore.squaremapHandler().getLayer(
-                        world.identifier().asString(), WarpMarkerLayer.class, source.layerKey);
-                    if (layer != null) {
-                        layer.sync(next);
-                    }
-                });
+                accept(source, next);
             } catch (ReflectiveOperationException | LinkageError | RuntimeException exception) {
                 if (FAILED.put(source, true) == null) {
                     Throwable cause = exception instanceof InvocationTargetException target
@@ -84,5 +98,24 @@ public final class WarpHandler {
     public static void reset() {
         SNAPSHOTS.clear();
         FAILED.clear();
+    }
+
+    static void accept(Source source, Map<String, WarpPoint> next) {
+        if (!source.enabled() || next.equals(current(source))) {
+            return;
+        }
+        Map<String, WarpPoint> snapshot = Map.copyOf(next);
+        SNAPSHOTS.put(source, snapshot);
+        SquaremapProvider.get().mapWorlds().forEach(world -> {
+            WarpMarkerLayer layer = SquareMarkersCore.squaremapHandler().getLayer(
+                world.identifier().asString(), WarpMarkerLayer.class, source.layerKey());
+            if (layer != null) {
+                layer.sync(snapshot);
+            }
+        });
+    }
+
+    static void clear(Source source) {
+        SNAPSHOTS.remove(source);
     }
 }

@@ -74,6 +74,7 @@ public class Layers {
 		public static String OPAC = "open_parties_and_claims";
 		public static String FABRIC_ESSENTIALS_WARPS = "fabric_essentials_warps";
 		public static String ESSENTIAL_COMMANDS_WARPS = "essential_commands_warps";
+		public static String HUSKHOMES_WARPS = "huskhomes_warps";
 		public static String WAYSTONES = "waystones";
 		public static String SIGNS = "signs";
 		public static String LIGHTNING = "lightning";
@@ -90,6 +91,7 @@ public class Layers {
 		public static String OPAC = "Open Parties and Claims";
 		public static String FABRIC_ESSENTIALS_WARPS = "Fabric Essentials Warps";
 		public static String ESSENTIAL_COMMANDS_WARPS = "Essential Commands Warps";
+		public static String HUSKHOMES_WARPS = "HuskHomes Warps";
 		public static String WAYSTONES = "Waystones";
 		public static String SIGNS = "Signs";
 		public static String LIGHTNING = "Lightning Strikes";

@@ -5,8 +5,6 @@ import net.squaremarkers.core.layers.primitive.MarkerLayer;
 import net.squaremarkers.core.markers.IconMarkerBuilder;
 import net.squaremarkers.core.markers.MarkerBuilder;
 import net.squaremarkers.core.registries.Icons;
-import net.squaremarkers.core.registries.Layers;
-import net.squaremarkers.fabric.FabricMarkersConfig;
 import xyz.jpenilla.squaremap.api.MapWorld;
 
 import java.util.HashMap;
@@ -17,14 +15,7 @@ public final class WarpMarkerLayer extends MarkerLayer<WarpPoint> {
     private final Map<String, WarpPoint> rendered = new HashMap<>();
 
     public WarpMarkerLayer(MapWorld world, WarpHandler.Source source) {
-        super(source == WarpHandler.Source.FABRIC_ESSENTIALS
-                ? Layers.Keys.FABRIC_ESSENTIALS_WARPS : Layers.Keys.ESSENTIAL_COMMANDS_WARPS,
-            source == WarpHandler.Source.FABRIC_ESSENTIALS
-                ? Layers.Labels.FABRIC_ESSENTIALS_WARPS : Layers.Labels.ESSENTIAL_COMMANDS_WARPS,
-            world,
-            source == WarpHandler.Source.FABRIC_ESSENTIALS
-                ? FabricMarkersConfig.FABRIC_ESSENTIALS_WARPS_PRIORITY
-                : FabricMarkersConfig.ESSENTIAL_COMMANDS_WARPS_PRIORITY);
+        super(source.layerKey(), source.label() + " Warps", world, source.priority());
         this.source = source;
     }
 
