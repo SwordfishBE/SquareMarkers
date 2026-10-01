@@ -67,29 +67,7 @@ public abstract class BlockListener {
 			}
 			return markerLayer.remove(pos.getX(), pos.getY(), pos.getZ());
 		}
-		// area markers
-		if (level instanceof ServerLevel serverWorld) {
-			if (state.is(Blocks.LODESTONE)) {
-				pos = pos.above();
-			}
-			var blockEntity = serverWorld.getBlockEntity(pos);
-			if (blockEntity instanceof BannerBlockEntity banner) {
-				var markerLayer = SquareMarkersCore.api()
-						.getWorld(level.dimension().identifier().toString())
-						.getLayer(AreaMarkerLayer.class, Layers.Keys.AREAS);
-				if (markerLayer == null) {
-					return null;
-				}
-				@Language("HTML") var name = banner.getName().tryCollapseToString();
-				if (name == null) {
-					return null;
-				}
-				return markerLayer.removePoint(
-						name, banner.getBaseColor().getTextureDiffuseColor(),
-						pos.getX(), pos.getY(), pos.getZ()
-				);
-			}
-		}
+		// Area points are removed by onChange only after a successful block change.
 		return null;
 	}
 
@@ -129,25 +107,15 @@ public abstract class BlockListener {
 			return markerLayer.remove(pos.getX(), pos.getY(), pos.getZ());
 		}
 		// banners
-		if (broke(BlockTags.BANNERS, state, newState)) {
+		if (broke(BlockTags.BANNERS, state, newState) || broke(Blocks.LODESTONE, state, newState)) {
 			var markerLayer = SquareMarkersCore.api()
 					.getWorld(level.dimension().identifier().toString())
 					.getLayer(AreaMarkerLayer.class, Layers.Keys.AREAS);
 			if (markerLayer == null) {
 				return null;
 			}
-			var blockEntity = level.getBlockEntity(pos);
-			if (!(blockEntity instanceof BannerBlockEntity banner)) {
-				return null;
-			}
-			@Language("HTML") var name = banner.getName().tryCollapseToString();
-			if (name == null) {
-				return null;
-			}
-			return markerLayer.removePoint(
-					name, banner.getBaseColor().getTextureDiffuseColor(),
-					pos.getX(), pos.getY(), pos.getZ()
-			);
+			BlockPos point = state.is(Blocks.LODESTONE) ? pos.above() : pos;
+			return markerLayer.removePointAt(point.getX(), point.getY(), point.getZ());
 		}
 		return null;
 	}

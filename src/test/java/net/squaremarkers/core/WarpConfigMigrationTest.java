@@ -7,6 +7,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WarpConfigMigrationTest {
     @Test
+    void preservesDisabledIntegrationsWithDifferentIndentation() {
+        for (int width : new int[]{1, 2, 4, 6}) {
+            String existing = "marker-settings:\r\n" + " ".repeat(width) + "huskhomes-warps:\r\n"
+                + " ".repeat(width * 2) + "enabled: false # private\r\n"
+                + " ".repeat(width * 2) + "priority: 12\r\n";
+            String updated = WarpConfigMigration.addMissingOptions(existing);
+            var parsed = MarkersConfig.parse(updated.lines().toList());
+            assertEquals("false", parsed.get("marker-settings.huskhomes-warps.enabled"));
+            assertEquals("12", parsed.get("marker-settings.huskhomes-warps.priority"));
+            assertTrue(updated.startsWith(existing));
+            assertEquals(updated, WarpConfigMigration.addMissingOptions(updated));
+        }
+    }
+
+    @Test
+    void rejectsDuplicateSectionsInsteadOfSilentlyEnablingIntegration() {
+        String existing = "marker-settings:\n  huskhomes-warps:\n    enabled: false\n"
+            + "  huskhomes-warps:\n    enabled: true\n";
+        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+            () -> MarkersConfig.parse(existing.lines().toList()));
+    }
+    @Test
     void preservesExistingSettingsCommentsAndLineEndings() {
         String existing = "# My settings\r\nmarker-settings:\r\n"
             + "  areas:\r\n    enabled: false # keep this\r\n    priority: 17\r\n"

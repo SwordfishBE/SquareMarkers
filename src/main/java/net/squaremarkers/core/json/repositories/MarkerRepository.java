@@ -7,6 +7,10 @@ import com.google.gson.reflect.TypeToken;
 import net.squaremarkers.core.interfaces.IMarkerRepository;
 import net.squaremarkers.core.SquareMarkersCore;
 import net.squaremarkers.core.json.entities.Marker;
+import net.squaremarkers.core.json.entities.PointMarker;
+import net.squaremarkers.core.json.entities.AreaMarker;
+import net.squaremarkers.core.json.entities.SignMarker;
+import net.squaremarkers.core.interfaces.entities.IPoint;
 import net.squaremarkers.core.json.entities.Point;
 import net.squaremarkers.core.json.serializers.PointSerializer;
 
@@ -129,15 +133,42 @@ public abstract class MarkerRepository<T extends Marker> implements IMarkerRepos
 				data = gson.fromJson(reader, markerClass);
 			}
 			if (data == null) {
-				return;
+				throw new JsonParseException("Marker data must be an array");
 			}
-			assert data instanceof HashSet<T>;
+			data.forEach(MarkerRepository::validate);
 			data.forEach(marker -> marker.SetContext(this));
 			this.data = data;
 		} catch (JsonParseException exception) {
 			backupCorruptFile(exception);
 		} catch (IOException exception) {
 			SquareMarkersCore.warn("Failed to read marker data from " + filePath, exception);
+		}
+	}
+
+	private static void validate(Marker marker) {
+		if (marker == null) {
+			throw new JsonParseException("Marker entries must not be null");
+		}
+		if (marker instanceof PointMarker point) {
+			validatePoint(point.getPosition());
+		}
+		if (marker instanceof SignMarker sign) {
+			String[] text = sign.getText();
+			if (text == null || text.length != 4 || java.util.Arrays.stream(text).anyMatch(java.util.Objects::isNull)) {
+				throw new JsonParseException("Sign markers must contain four non-null text lines");
+			}
+		}
+		if (marker instanceof AreaMarker area) {
+			if (area.getName() == null || area.getPoints() == null || area.getPoints().isEmpty()) {
+				throw new JsonParseException("Area markers must have a name and points");
+			}
+			area.getPoints().forEach(MarkerRepository::validatePoint);
+		}
+	}
+
+	private static void validatePoint(IPoint point) {
+		if (point == null || Math.abs((long) point.x()) > 30_000_000 || Math.abs((long) point.z()) > 30_000_000) {
+			throw new JsonParseException("Marker position is missing or outside the world bounds");
 		}
 	}
 

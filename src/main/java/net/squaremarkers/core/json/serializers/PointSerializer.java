@@ -19,14 +19,28 @@ public class PointSerializer implements JsonSerializer<IPoint>, JsonDeserializer
 
 	@Override
 	public IPoint deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+		if (!json.isJsonArray() || json.getAsJsonArray().size() != 3) {
+			throw new JsonParseException("A marker position must contain exactly three integer coordinates");
+		}
 		var arr = json.getAsJsonArray();
-		int x = arr.get(0).getAsInt();
-		int y = arr.get(1).getAsInt();
-		int z = arr.get(2).getAsInt();
+		int x = coordinate(arr.get(0));
+		int y = coordinate(arr.get(1));
+		int z = coordinate(arr.get(2));
 		if (typeOfT.equals(Point.class)) {
 			return new Point(x, y, z);
 		}
 		throw new JsonParseException("Unsupported IPoint type: " + typeOfT.getTypeName());
+	}
+
+	private static int coordinate(JsonElement element) {
+		if (!element.isJsonPrimitive() || !element.getAsJsonPrimitive().isNumber()) {
+			throw new JsonParseException("A marker coordinate must be an integer");
+		}
+		try {
+			return element.getAsBigDecimal().intValueExact();
+		} catch (ArithmeticException | NumberFormatException exception) {
+			throw new JsonParseException("Invalid marker coordinate", exception);
+		}
 	}
 
 }

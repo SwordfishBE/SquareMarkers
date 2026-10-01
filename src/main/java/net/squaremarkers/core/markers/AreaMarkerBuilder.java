@@ -15,6 +15,11 @@ public final class AreaMarkerBuilder extends MarkerBuilder<Marker> {
         return new AreaMarkerBuilder(Marker.polygon(points.stream().map(IPoint::toMapPoint).toList()));
     }
 
+    public static AreaMarkerBuilder newAreaMarker(String ignoredKey, List<IPoint> points, List<List<IPoint>> holes) {
+        return new AreaMarkerBuilder(Marker.polygon(points.stream().map(IPoint::toMapPoint).toList(),
+            holes.stream().map(hole -> hole.stream().map(IPoint::toMapPoint).toList()).toList()));
+    }
+
     public static AreaMarkerBuilder newAreaMarker(String ignoredKey, IPoint center, int radius) {
         return new AreaMarkerBuilder(Marker.circle(center.toMapPoint(), radius));
     }

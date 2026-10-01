@@ -33,6 +33,7 @@ dependencies {
     compileOnly 'org.jspecify:jspecify:1.0.0'
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+    testImplementation "xyz.jpenilla:squaremap-api:${project.squaremap_api_version}"
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.11.4'
 
 }

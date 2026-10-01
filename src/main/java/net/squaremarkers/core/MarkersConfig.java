@@ -114,11 +114,13 @@ public final class MarkersConfig {
                 Files.writeString(path, DEFAULT_CONFIG, StandardCharsets.UTF_8);
             }
             String config = Files.readString(path, StandardCharsets.UTF_8);
+            parse(config.lines().toList()); // Reject ambiguous input before modifying the file.
             String migrated = WarpConfigMigration.addMissingOptions(config);
+            Map<String, String> parsed = parse(migrated.lines().toList());
             if (!migrated.equals(config)) {
                 writeMigratedConfig(path, migrated);
             }
-            values = parse(migrated.lines().toList());
+            values = parsed;
             FEEDBACK_MESSAGES_ENABLED = getBoolean("settings.feedback.messages", true);
             FEEDBACK_SOUNDS_ENABLED = getBoolean("settings.feedback.sound", true);
             FEEDBACK_AREA_ENTER_ENABLED = getBoolean("settings.feedback.area-enter", true);
@@ -146,7 +148,7 @@ public final class MarkersConfig {
             LIGHTNING_MARKERS_ENABLED = getBoolean("marker-settings.lightning.enabled", true);
             LIGHTNING_MARKERS_PRIORITY = getInt("marker-settings.lightning.priority", 50);
             LIGHTNING_MARKERS_LIFETIME = getInt("marker-settings.lightning.lifetime", 3, 0, 86_400);
-        } catch (IOException exception) {
+        } catch (IOException | IllegalArgumentException exception) {
             SquareMarkersCore.warn("Failed to load config", exception);
         }
     }
@@ -199,9 +201,11 @@ public final class MarkersConfig {
         return value;
     }
 
-    private static Map<String, String> parse(List<String> lines) {
+    static Map<String, String> parse(List<String> lines) {
         Map<String, String> parsed = new HashMap<>();
-        List<String> sections = new ArrayList<>();
+        record Section(int indent, String name) {}
+        List<Section> sections = new ArrayList<>();
+        java.util.Set<String> seen = new java.util.HashSet<>();
         for (String rawLine : lines) {
             String withoutComment = stripComment(rawLine);
             if (withoutComment.isBlank()) {
@@ -211,27 +215,30 @@ public final class MarkersConfig {
             while (spaces < withoutComment.length() && withoutComment.charAt(spaces) == ' ') {
                 spaces++;
             }
-            int depth = spaces / 2;
+            if (withoutComment.charAt(spaces) == '\t') {
+                throw new IllegalArgumentException("Use spaces for configuration indentation");
+            }
             String line = withoutComment.trim();
             int separator = line.indexOf(':');
-            if (separator < 0) {
-                continue;
+            if (separator <= 0) {
+                throw new IllegalArgumentException("Invalid configuration line: " + line);
             }
             String key = line.substring(0, separator).trim();
             String value = line.substring(separator + 1).trim();
-            while (sections.size() > depth) {
+            while (!sections.isEmpty() && sections.getLast().indent() >= spaces) {
                 sections.removeLast();
             }
+            List<String> path = new ArrayList<>(sections.stream().map(Section::name).toList());
+            path.add(key);
+            String fullKey = String.join(".", path);
+            if (!seen.add(fullKey)) {
+                throw new IllegalArgumentException("Duplicate configuration key: " + fullKey);
+            }
             if (value.isEmpty()) {
-                while (sections.size() < depth) {
-                    sections.add("");
-                }
-                sections.add(key);
+                sections.add(new Section(spaces, key));
                 continue;
             }
-            List<String> path = new ArrayList<>(sections);
-            path.add(key);
-            parsed.put(String.join(".", path), unquote(value));
+            parsed.put(fullKey, unquote(value));
         }
         return parsed;
     }

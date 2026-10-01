@@ -43,8 +43,8 @@ public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerR
 	public MarkerBuilder<?> createBuilder(IAreaMarker area) {
 		super.removeMarker(area);
 		boundaries.remove(area.getKey());
-		var points = area.getPoints();
-		if (points == null || points.isEmpty()) {
+		var points = ConvexHull.limitPoints(area.getPoints());
+		if (points.isEmpty()) {
 			return null;
 		}
 		// If there are 2 points in line, make a circle instead of a polygon
@@ -53,14 +53,14 @@ public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerR
 					.sorted(Comparator.comparingInt(IPoint::x).thenComparingInt(IPoint::z))
 					.toList();
 			var center = sorted.get(0).middle(sorted.get(1));
-			var radius = (int) Math.round(sorted.get(0).distance(sorted.get(1)) / 2);
+			var radius = (int) Math.floor(sorted.get(0).distance(sorted.get(1)) / 2);
 			boundaries.put(area.getKey(), new CircleBoundary(center, radius, area));
 			return AreaMarkerBuilder.newAreaMarker(area.getKey(), center, radius)
 					.fill(area.getColor())
 					.stroke(area.getColor());
 		}
 
-		var orderedPoints = ConvexHull.calculate(new ArrayList<>(area.getPoints()));
+		var orderedPoints = ConvexHull.calculate(points);
 		boundaries.put(area.getKey(), new PolygonBoundary(area.getMinCorner(), area.getMaxCorner(), orderedPoints, area));
 		if (!orderedPoints.isEmpty()) {
 			return AreaMarkerBuilder.newAreaMarker(area.getKey(), orderedPoints)
@@ -91,11 +91,11 @@ public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerR
 		if (MarkersConfig.AREA_MARKERS_SHOW_SIZE) {
 			IBoundary boundary = boundaries.get(area.getKey());
 			if (boundary == null) {
-				var points = area.getPoints();
+				var points = ConvexHull.limitPoints(area.getPoints());
 				if (points.size() == 2 && areInline(points)) {
 					var sorted = points.stream().sorted(Comparator.comparingInt(IPoint::x).thenComparingInt(IPoint::z)).toList();
 					var center = sorted.get(0).middle(sorted.get(1));
-					boundary = new CircleBoundary(center, (int) Math.round(sorted.get(0).distance(sorted.get(1)) / 2), area);
+					boundary = new CircleBoundary(center, (int) Math.floor(sorted.get(0).distance(sorted.get(1)) / 2), area);
 				} else {
 					boundary = new PolygonBoundary(area.getMinCorner(), area.getMaxCorner(), ConvexHull.calculate(new ArrayList<>(points)), area);
 				}
@@ -181,6 +181,17 @@ public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerR
 		return boundaries.values().stream()
 		   .filter(b -> b.contains(x, z))
 		   .findFirst();
+	}
+
+	/** Removes persisted points even after the banner block entity has disappeared. */
+	public InteractionResult removePointAt(int x, int y, int z) {
+		InteractionResult result = InteractionResult.skip();
+		for (var area : getRepository().copy()) {
+			if (area.getPoints().stream().anyMatch(point -> point.equals(x, y, z))) {
+				result = removePoint(area.getName(), area.getColor(), x, y, z);
+			}
+		}
+		return result;
 	}
 
 	public long revision() {

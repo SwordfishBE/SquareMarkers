@@ -26,22 +26,24 @@ final class WarpConfigMigration {
         List<Line> lines = lines(config);
         int parent = findHeader(lines, 0, lines.size(), 0, "marker-settings");
         if (parent < 0) {
-            String block = "marker-settings:" + newline + sectionBlock(section, options, newline);
+            String block = "marker-settings:" + newline + sectionBlock(section, options, newline, 2, 4);
             return insert(config, config.length(), block, newline);
         }
 
         int parentEnd = nextSection(lines, parent + 1, 0);
-        int child = findHeader(lines, parent + 1, parentEnd, 2, section);
+        int childIndent = contentIndent(lines, parent + 1, parentEnd, 2);
+        int child = findHeader(lines, parent + 1, parentEnd, childIndent, section);
         if (child < 0) {
             int offset = parentEnd == lines.size() ? config.length() : lines.get(parentEnd).start();
-            return insert(config, offset, sectionBlock(section, options, newline), newline);
+            return insert(config, offset, sectionBlock(section, options, newline, childIndent, childIndent * 2), newline);
         }
 
-        int childEnd = nextSection(lines, child + 1, 2);
+        int childEnd = nextSection(lines, child + 1, childIndent);
+        int optionIndent = contentIndent(lines, child + 1, childEnd, childIndent * 2);
         StringBuilder missing = new StringBuilder();
         for (Option option : options) {
-            if (!findKey(lines, child + 1, childEnd, 4, option.key())) {
-                missing.append("    ").append(option.key()).append(": ")
+            if (!findKey(lines, child + 1, childEnd, optionIndent, option.key())) {
+                missing.append(" ".repeat(optionIndent)).append(option.key()).append(": ")
                     .append(option.defaultValue()).append(newline);
             }
         }
@@ -52,10 +54,16 @@ final class WarpConfigMigration {
         return insert(config, offset, missing.toString(), newline);
     }
 
-    private static String sectionBlock(String section, List<Option> options, String newline) {
-        StringBuilder block = new StringBuilder("  ").append(section).append(":").append(newline);
+    private static int contentIndent(List<Line> lines, int from, int to, int fallback) {
+        return lines.subList(from, to).stream()
+            .filter(line -> !line.text().isBlank() && !line.text().startsWith("#"))
+            .mapToInt(Line::indent).min().orElse(fallback);
+    }
+
+    private static String sectionBlock(String section, List<Option> options, String newline, int childIndent, int optionIndent) {
+        StringBuilder block = new StringBuilder(" ".repeat(childIndent)).append(section).append(":").append(newline);
         for (Option option : options) {
-            block.append("    ").append(option.key()).append(": ")
+            block.append(" ".repeat(optionIndent)).append(option.key()).append(": ")
                 .append(option.defaultValue()).append(newline);
         }
         return block.toString();

@@ -25,6 +25,7 @@ public class ConvexHull {
      * @return a line of external points
      */
     public static List<IPoint> calculate(List<IPoint> points) {
+		points = limitPoints(points);
 	    if (points.isEmpty()) {
 		    return points;
 	    } else if (points.size() < 2) {
@@ -46,14 +47,20 @@ public class ConvexHull {
 		    );
 	    }
 
-        // Sort points
-        points.sort(null);
-		// Cluster points if necessary
-		if (points.getFirst().distance(points.getLast()) > getMaxSize()) {
-			points = cluster(points);
-		}
-
 		return points.size() < 3 ?  minimalArea(points.getFirst()) : calculateInternal(points);
+	}
+
+	/** Applies the same limit before choosing a circle, rectangle, or polygon. */
+	public static List<IPoint> limitPoints(java.util.Collection<? extends IPoint> input) {
+		List<IPoint> points = new ArrayList<>(input);
+		points.sort(null);
+		if (points.size() < 2) {
+			return points;
+		}
+		int minZ = points.stream().mapToInt(IPoint::z).min().orElseThrow();
+		int maxZ = points.stream().mapToInt(IPoint::z).max().orElseThrow();
+		double extent = Math.hypot((double) points.getLast().x() - points.getFirst().x(), (double) maxZ - minZ);
+		return extent > getMaxSize() ? cluster(points) : points;
 	}
 
 	private static List<IPoint> cluster(List<IPoint> points) {
@@ -114,10 +121,11 @@ public class ConvexHull {
 	}
 
 	private static List<IPoint> minimalArea(IPoint center) {
+		int radius = Math.min(8, (int) Math.floor(getMaxSize() / Math.sqrt(5)));
 		return List.of(
-				center.add(0, 0, -8),
-				center.add(8, 0, 8),
-				center.add(-8, 0, 8)
+				center.add(0, 0, -radius),
+				center.add(radius, 0, radius),
+				center.add(-radius, 0, radius)
 		);
 	}
 

@@ -3,6 +3,7 @@ package net.squaremarkers.fabric.compat.layers;
 import net.minecraft.server.MinecraftServer;
 import net.squaremarkers.core.SquareMarkersCore;
 import net.squaremarkers.core.helpers.HtmlHelper;
+import net.squaremarkers.core.helpers.PolygonLoops;
 import net.squaremarkers.core.interfaces.entities.IMarker;
 import net.squaremarkers.core.layers.primitive.MarkerLayer;
 import net.squaremarkers.core.markers.AreaMarkerBuilder;
@@ -139,12 +140,14 @@ public final class OPACAreaMarkerLayer extends MarkerLayer<IMarker> {
     }
 
     private synchronized void renderClaim(OpacClaim claim) {
-        renderedKeys.getOrDefault(claim.key, List.of()).forEach(this::removeMarker);
+        List<String> previousKeys = renderedKeys.remove(claim.key);
+        if (previousKeys != null) previousKeys.forEach(this::removeMarker);
+        if (claim.isEmpty()) return;
         List<String> keys = new ArrayList<>();
         AtomicInteger counter = new AtomicInteger();
-        claim.getPolygons().forEach(polygon -> {
+        PolygonLoops.group(claim.getPolygons()).forEach(polygon -> {
             String key = claim.key + ":" + counter.incrementAndGet();
-            AreaMarkerBuilder markerBuilder = AreaMarkerBuilder.newAreaMarker(key, polygon)
+            AreaMarkerBuilder markerBuilder = AreaMarkerBuilder.newAreaMarker(key, polygon.exterior(), polygon.holes())
                 .fill(claim.color)
                 .stroke(claim.color);
             if (FabricMarkersConfig.OPAC_MARKERS_ALWAYS_SHOW_NAME) {
