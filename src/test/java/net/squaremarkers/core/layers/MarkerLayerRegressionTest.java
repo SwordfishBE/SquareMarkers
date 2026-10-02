@@ -10,6 +10,8 @@ import net.squaremarkers.core.helpers.PolygonLoops;
 import net.squaremarkers.core.interfaces.entities.IPoint;
 import net.squaremarkers.fabric.compat.layers.OPACAreaMarkerLayer;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.AfterEach;
+import net.squaremarkers.fabric.compat.OpacGeometryWorker;
 import org.junit.jupiter.api.io.TempDir;
 import xyz.jpenilla.squaremap.api.MapWorld;
 import xyz.jpenilla.squaremap.api.WorldIdentifier;
@@ -24,12 +26,24 @@ import static org.junit.jupiter.api.Assertions.*;
 class MarkerLayerRegressionTest {
     @TempDir Path directory;
 
+    @AfterEach void stopWorker() { OpacGeometryWorker.SHARED.shutdown(); }
+
+    private static void awaitGeometry(OPACAreaMarkerLayer layer) throws Exception {
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
+        while (layer.hasPendingGeometry() && System.nanoTime() < deadline) {
+            layer.flushPendingChanges();
+            Thread.sleep(1);
+        }
+        assertFalse(layer.hasPendingGeometry(), "Geometry did not complete");
+    }
+
     @Test
-    void opacMetadataUpdatesPreserveGeometryAndLeaveUnchangedMarkersAlone() {
+    void opacMetadataUpdatesPreserveGeometryAndLeaveUnchangedMarkersAlone() throws Exception {
         var layer = new OPACAreaMarkerLayer(world());
         for (int x = 0; x < 3; x++) for (int z = 0; z < 3; z++) {
             if (x != 1 || z != 1) layer.addChunk(chunk(x, z, "Owner"), true);
         }
+        awaitGeometry(layer);
         Polygon original = (Polygon) layer.provider().getMarkers().iterator().next();
         layer.updateMetadata("Owner", "Claim - Owner's claim", 0x00ff00);
         assertSame(original, layer.provider().getMarkers().iterator().next());
@@ -46,6 +60,7 @@ class MarkerLayerRegressionTest {
         layer.updateMetadata("Owner", "New <script>name</script>", 0xff0000);
         assertSame(updated, layer.provider().getMarkers().iterator().next());
         layer.removeChunk(0, 0, true);
+        awaitGeometry(layer);
         assertEquals(java.awt.Color.RED, layer.provider().getMarkers().iterator().next().markerOptions().fillColor());
     }
 
@@ -96,6 +111,7 @@ class MarkerLayerRegressionTest {
         for (int x = 0; x < 3; x++) for (int z = 0; z < 3; z++) {
             if (x != 1 || z != 1) layer.addChunk(chunk(x, z, "Ring"), true);
         }
+        awaitGeometry(layer);
         assertEquals(1, layer.provider().getMarkers().size());
         Polygon polygon = (Polygon) layer.provider().getMarkers().iterator().next();
         assertEquals(1, polygon.negativeSpace().size());
@@ -104,6 +120,7 @@ class MarkerLayerRegressionTest {
             layer.addChunk(chunk(0, 0, "Player" + i), true);
             layer.removeChunk(0, 0, true);
         }
+        awaitGeometry(layer);
         assertTrue(layer.provider().getMarkers().isEmpty());
         var field = OPACAreaMarkerLayer.class.getDeclaredField("renderedKeys");
         field.setAccessible(true);

@@ -123,6 +123,7 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			SquareMarkersCore.squaremapHandler().unregisterWorld(level.dimension().identifier().toString())
 		);
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
+            if (isOpacEnabled()) OpacHandler.flushPending();
 			if (WaystonesHandler.installed()) {
 				WaystonesHandler.flushPending(server);
 			}

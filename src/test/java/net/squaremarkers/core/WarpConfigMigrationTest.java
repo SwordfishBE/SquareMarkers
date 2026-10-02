@@ -6,6 +6,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WarpConfigMigrationTest {
+    @Test void deathTimezoneMigrationPreservesSelectedZoneAndDefaultsToUtc() {
+        String existing = "marker-settings:\n  deaths:\n    timezone: Europe/Brussels # keep\n";
+        String updated = WarpConfigMigration.addMissingOptions(existing);
+        assertEquals("Europe/Brussels", MarkersConfig.parse(updated.lines().toList()).get("marker-settings.deaths.timezone"));
+        assertTrue(updated.contains("timezone: Europe/Brussels # keep"));
+        assertEquals(updated, WarpConfigMigration.addMissingOptions(updated));
+        assertEquals("UTC", MarkersConfig.parse(WarpConfigMigration.addMissingOptions("").lines().toList())
+            .get("marker-settings.deaths.timezone"));
+    }
+    @Test void timezoneParsingAcceptsStandardZonesAndSafelyRejectsAmbiguousAbbreviations() {
+        assertEquals(java.time.ZoneId.of("UTC"), MarkersConfig.parseDeathTimezone("UTC"));
+        assertEquals(java.time.ZoneId.of("Europe/Brussels"), MarkersConfig.parseDeathTimezone("Europe/Brussels"));
+        assertEquals(java.time.ZoneId.of("UTC+01:00"), MarkersConfig.parseDeathTimezone("UTC+01:00"));
+        assertEquals(java.time.ZoneId.of("UTC"), MarkersConfig.parseDeathTimezone("CEST+1"));
+        assertEquals(java.time.ZoneId.of("UTC"), MarkersConfig.parseDeathTimezone("BST"));
+    }
     @Test void deathLifetimeCommentPreservesValuesCommentsAndLineEndings() {
         String existing = "marker-settings:\r\n    deaths:\r\n        enabled: true\r\n"
             + "        # My custom duration\r\n        lifetime: 120 # preserve me\r\n";

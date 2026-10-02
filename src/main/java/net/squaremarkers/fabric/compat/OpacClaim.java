@@ -12,15 +12,26 @@ public class OpacClaim {
 	@Language("HTML")
 	public String name;
 	public int color;
+    public String ownerName;
+    public final String ownerKey;
 
 	private final Map<ChunkPos, OpacChunk> chunks;
 
 	public OpacClaim(String playerName, @Language("HTML") String name, int color) {
-		key = createKey(playerName);
+        this(new OpacChunk(new ChunkPos(0, 0), playerName, name, color));
+        this.name = name;
+    }
+
+    public OpacClaim(OpacChunk chunk) {
+        key = chunk.groupKey();
+        ownerKey = chunk.ownerKey();
+        ownerName = chunk.playerName();
 		chunks = new HashMap<>();
-		this.name = name;
-		this.color = color;
+        name = chunk.getName();
+        color = chunk.color();
 	}
+
+    public OpacChunk representative() { return chunks.values().iterator().next(); }
 
 	public static String createKey(String playerName) {
 		return "OpacClaim:" + playerName;
@@ -53,6 +64,7 @@ public class OpacClaim {
 
 		Map<OpacEdge, Integer> edgeCounts = new HashMap<>();
 		for (OpacChunk chunk : chunks.values()) {
+			if (Thread.currentThread().isInterrupted()) throw new java.util.concurrent.CancellationException();
 			for (OpacEdge edge : chunk.getEdges()) {
 				edgeCounts.put(edge, edgeCounts.getOrDefault(edge, 0) + 1);
 			}
@@ -71,6 +83,7 @@ public class OpacClaim {
 
 		List<List<IPoint>> orderedLoops = new ArrayList<>();
 		while (!availableEdges.isEmpty()) {
+			if (Thread.currentThread().isInterrupted()) throw new java.util.concurrent.CancellationException();
 			OpacEdge startEdge = availableEdges.iterator().next();
 			availableEdges.remove(startEdge);
 

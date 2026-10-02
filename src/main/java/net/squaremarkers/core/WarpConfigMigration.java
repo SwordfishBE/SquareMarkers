@@ -21,10 +21,13 @@ final class WarpConfigMigration {
             new Option("enabled", "true"), new Option("priority", "50"),
             new Option("include-sharestones", "true"), new Option("include-undiscovered", "false")));
         updated = addSection(updated, "deaths", newline, List.of(
-            new Option("enabled", "false"), new Option("priority", "50"), new Option("lifetime", "1800")));
+            new Option("enabled", "false"), new Option("priority", "50"), new Option("lifetime", "1800"),
+            new Option("timezone", "UTC")));
         updated = addSection(updated, "open-parties-and-claims", newline, List.of(
             new Option("metadata-refresh-interval", "30")));
-        return addOptionComment(updated, "deaths", "lifetime", "# Marker lifetime in seconds.", newline);
+        updated = addOptionComment(updated, "deaths", "lifetime", "# Marker lifetime in seconds.", newline);
+        return addOptionComment(updated, "deaths", "timezone",
+            "# UTC, Europe/Brussels, Europe/London, or a fixed offset such as UTC+01:00.", newline);
     }
 
     private static String addOptionComment(String config, String section, String key, String comment, String newline) {

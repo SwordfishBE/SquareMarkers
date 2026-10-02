@@ -105,7 +105,7 @@ final class MarkerCommands {
         MarkerLayer<?> layer = SquareMarkersCore.squaremapHandler().findLayer(world, key);
         Set<String> present = layer == null ? Set.of() : layer.markerIdentities();
         ids.stream().skip((page - 1L) * 10).limit(10).forEach(id -> message(context.getSource(),
-            (SquareMarkersCore.visibility().hidden(world, key, id) ? "[hidden] " : "[visible] ")
+            ((layer != null ? layer.isHidden(id) : SquareMarkersCore.visibility().hidden(world, key, id)) ? "[hidden] " : "[visible] ")
                 + StringArgumentType.escapeIfRequired(id)
                 + (!present.contains(id) ? " (source currently absent)" : "")
                 + (layer != null && present.contains(id) ? " | " + layer.markerSummary(id) : "")));
@@ -121,6 +121,10 @@ final class MarkerCommands {
             return failure(context.getSource(), "Could not save visibility (storage error or exclusion limit reached).");
         }
         if (layer != null) layer.refreshVisibility(id);
+        if (!hidden && layer != null && layer.isHidden(id)) {
+            message(context.getSource(), "Individual exclusion cleared, but this marker remains hidden by an owner-level exclusion. Show that owner entry first.");
+            return 1;
+        }
         message(context.getSource(), "Marker " + (hidden ? "hidden from" : "shown on") + " squaremap: " + id
             + ". The web map updates on squaremap's next update.");
         return 1;
@@ -145,7 +149,8 @@ final class MarkerCommands {
         statusMessage(source, colored("Deaths: ", ChatFormatting.GRAY)
             .append(colored(MarkersConfig.DEATH_MARKERS_ENABLED ? "enabled" : "disabled",
                 MarkersConfig.DEATH_MARKERS_ENABLED ? ChatFormatting.GREEN : ChatFormatting.YELLOW))
-            .append(colored(" | Lifetime: " + MarkersConfig.DEATH_MARKERS_LIFETIME + "s", ChatFormatting.GRAY)));
+            .append(colored(" | Lifetime: " + MarkersConfig.DEATH_MARKERS_LIFETIME + "s | Zone: "
+                + MarkersConfig.DEATH_MARKERS_TIMEZONE.getId(), ChatFormatting.GRAY)));
         int installed = SquareMarkers.isOpacInstalled() ? 1 : 0;
         int enabled = SquareMarkers.isOpacEnabled() ? 1 : 0;
         for (var warp : WarpHandler.Source.values()) {

@@ -132,19 +132,28 @@ public abstract class MarkerLayer<T> {
 
     /** A source object may have multiple geometry fragments sharing one visibility identity. */
     protected String visibilityKey(String markerKey) { return markerKey; }
+    protected Set<String> additionalMarkerIdentities() { return Set.of(); }
+    protected boolean additionallyHidden(String identity) { return false; }
+    protected boolean affectedByVisibility(String markerIdentity, String changedIdentity) {
+        return markerIdentity.equals(changedIdentity);
+    }
+    protected final MarkerVisibility markerVisibility() { return visibility; }
+    protected @Nullable String identitySummary(String identity) { return null; }
 
     public final Set<String> markerIdentities() {
-        return logicalMarkers.keySet().stream().map(this::visibilityKey).collect(Collectors.toUnmodifiableSet());
+        return java.util.stream.Stream.concat(logicalMarkers.keySet().stream().map(this::visibilityKey),
+            additionalMarkerIdentities().stream()).collect(Collectors.toUnmodifiableSet());
     }
 
     public final boolean isHidden(String identity) {
-        return visibility.hidden(worldIdentifier, key, identity);
+        return visibility.hidden(worldIdentifier, key, identity) || additionallyHidden(identity);
     }
 
     public final void refreshVisibility(String identity) {
-        boolean hidden = isHidden(identity);
         logicalMarkers.forEach((raw, marker) -> {
-            if (!visibilityKey(raw).equals(identity)) return;
+            String candidate = visibilityKey(raw);
+            if (!affectedByVisibility(candidate, identity)) return;
+            boolean hidden = isHidden(candidate);
             if (hidden) provider.removeMarker(toKey(raw)); else provider.addMarker(toKey(raw), marker);
         });
     }
@@ -153,6 +162,8 @@ public abstract class MarkerLayer<T> {
     public final int visibleCount() { return provider.registeredMarkers().size(); }
 
     public final String markerSummary(String identity) {
+        String custom = identitySummary(identity);
+        if (custom != null) return custom;
         return logicalMarkers.entrySet().stream().filter(entry -> visibilityKey(entry.getKey()).equals(identity))
             .map(entry -> {
                 var options = entry.getValue().markerOptions();

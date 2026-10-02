@@ -24,12 +24,12 @@ public class OpacListener implements IClaimsManagerListenerAPI {
 		}
 		if (p == null) {
 			// chunk unclaimed
-			markerLayer.removeChunk(x, z, true);
+            markerLayer.queueChunkChange(x, z, null);
 		} else {
 			// chunk claimed
-			OpacChunk chunk = OpacHandler.getChunk(markerLayer.getServer(), p.getPlayerId(), x, z);
+            OpacChunk chunk = OpacHandler.getChunk(markerLayer.getServer(), world, p, x, z);
 			if (chunk != null) {
-				markerLayer.addChunk(chunk, true);
+                markerLayer.queueChunkChange(x, z, chunk);
 			}
 		}
 	}

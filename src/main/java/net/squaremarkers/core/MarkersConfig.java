@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.time.DateTimeException;
+import java.time.ZoneId;
 
 public final class MarkersConfig {
     private static final String DEFAULT_CONFIG = """
@@ -59,6 +61,8 @@ public final class MarkersConfig {
             priority: 50
             # Marker lifetime in seconds.
             lifetime: 1800
+            # UTC, Europe/Brussels, Europe/London, or a fixed offset such as UTC+01:00.
+            timezone: UTC
           open-parties-and-claims:
             enabled: true
             priority: 40
@@ -113,6 +117,7 @@ public final class MarkersConfig {
     public static boolean DEATH_MARKERS_ENABLED = false;
     public static int DEATH_MARKERS_PRIORITY = 50;
     public static int DEATH_MARKERS_LIFETIME = 1800;
+    public static ZoneId DEATH_MARKERS_TIMEZONE = ZoneId.of("UTC");
 
     private MarkersConfig() {
     }
@@ -162,6 +167,7 @@ public final class MarkersConfig {
             DEATH_MARKERS_ENABLED = getBoolean("marker-settings.deaths.enabled", false);
             DEATH_MARKERS_PRIORITY = getInt("marker-settings.deaths.priority", 50);
             DEATH_MARKERS_LIFETIME = getInt("marker-settings.deaths.lifetime", 1800, 1, 604_800);
+            DEATH_MARKERS_TIMEZONE = parseDeathTimezone(values.getOrDefault("marker-settings.deaths.timezone", "UTC"));
         } catch (IOException | IllegalArgumentException exception) {
             SquareMarkersCore.warn("Failed to load config", exception);
         }
@@ -194,6 +200,15 @@ public final class MarkersConfig {
         }
         SquareMarkersCore.warn("Invalid boolean for '" + key + "': " + value);
         return fallback;
+    }
+
+    static ZoneId parseDeathTimezone(String value) {
+        try {
+            return ZoneId.of(value);
+        } catch (DateTimeException exception) {
+            SquareMarkersCore.warn("Invalid timezone for 'marker-settings.deaths.timezone': " + value + "; using UTC");
+            return ZoneId.of("UTC");
+        }
     }
 
     public static int getInt(String key, int fallback) {

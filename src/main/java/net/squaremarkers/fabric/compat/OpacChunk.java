@@ -4,8 +4,25 @@ import net.minecraft.world.level.ChunkPos;
 import net.squaremarkers.core.interfaces.entities.IPoint;
 
 import java.util.List;
+import java.util.UUID;
 
-public record OpacChunk(ChunkPos pos, String playerName, String name, int color) {
+public record OpacChunk(ChunkPos pos, String playerName, String name, int color,
+                        UUID ownerId, String subId, int subIndex) {
+
+    /** Legacy constructor for geometry-only clients without an OPAC claim state. */
+    public OpacChunk(ChunkPos pos, String playerName, String name, int color) {
+        this(pos, playerName, name, color, null, "main", -1);
+    }
+
+    public String groupKey() {
+        // '$' is not a valid OPAC sub-ID: a user-created subclaim named 'main'
+        // must never collide with the owner's main claim group.
+        return ownerId == null ? OpacClaim.createKey(playerName) : ownerKey() + ":" + (subIndex < 0 ? "$main" : subId);
+    }
+
+    public String ownerKey() {
+        return OpacClaim.createKey(ownerId == null ? playerName : ownerId.toString());
+    }
 
 	public String getName() {
 		return (name.isEmpty() ? "" : name + " - ") + playerName + "'s claim";

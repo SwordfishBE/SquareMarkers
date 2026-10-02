@@ -9,8 +9,14 @@ import net.squaremarkers.core.registries.Icons;
 import net.squaremarkers.core.registries.Layers;
 import xyz.jpenilla.squaremap.api.MapWorld;
 import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 public final class DeathMarkerLayer extends MarkerLayer<DeathStore.Death> {
+    private static final DateTimeFormatter DEATH_TIME = DateTimeFormatter
+        .ofPattern("yyyy-MM-dd HH:mm:ss", Locale.ROOT);
+    private static final DateTimeFormatter ZONE_LABEL = DateTimeFormatter.ofPattern("z", Locale.ENGLISH);
     public DeathMarkerLayer(MapWorld world) {
         super(Layers.Keys.DEATHS, "Player Deaths", world, MarkersConfig.DEATH_MARKERS_PRIORITY);
     }
@@ -27,7 +33,11 @@ public final class DeathMarkerLayer extends MarkerLayer<DeathStore.Death> {
     @Override protected String createPopup(DeathStore.Death death) {
         return "<b>" + HtmlHelper.sanitize(death.name()) + "'s last death</b><br>"
             + "Position: " + death.x() + ", " + death.y() + ", " + death.z()
-            + "<br>Time (UTC): " + Instant.ofEpochMilli(death.diedAt())
-            + "<br>Expires (UTC): " + Instant.ofEpochMilli(death.expiresAt());
+            + "<br>" + formatDeathTime(death.diedAt(), MarkersConfig.DEATH_MARKERS_TIMEZONE);
+    }
+
+    static String formatDeathTime(long timestamp, ZoneId zone) {
+        var time = Instant.ofEpochMilli(timestamp).atZone(zone);
+        return "Time of death (" + ZONE_LABEL.format(time) + "): " + DEATH_TIME.format(time);
     }
 }

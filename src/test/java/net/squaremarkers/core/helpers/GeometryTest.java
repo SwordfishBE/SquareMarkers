@@ -61,6 +61,23 @@ class GeometryTest {
         assertFalse(filled(parts, 8, 24));
     }
 
+    @Test
+    void spatialIndexPreservesNestedHolesAmongThousandsOfIslands() {
+        var loops = new java.util.ArrayList<List<IPoint>>();
+        for (int i = 0; i < 3000; i++) loops.add(square(1000 + (i % 100) * 32, (i / 100) * 32, 16));
+        loops.add(square(0, 0, 96));
+        loops.add(square(16, 16, 64));
+        loops.add(square(32, 32, 16));
+        var parts = PolygonLoops.group(loops);
+        assertEquals(3002, parts.size());
+        assertEquals(1, parts.stream().mapToInt(part -> part.holes().size()).sum());
+        assertTrue(filled(parts, 8, 8));
+        assertFalse(filled(parts, 24, 24));
+        assertTrue(filled(parts, 40, 40));
+        assertTrue(filled(parts, 1008, 8));
+        assertFalse(filled(parts, 1024, 8));
+    }
+
     private static boolean filled(List<PolygonLoops.Part> parts, int x, int z) {
         return parts.stream().anyMatch(part -> path(part.exterior()).contains(x, z)
             && part.holes().stream().noneMatch(hole -> path(hole).contains(x, z)));

@@ -22,6 +22,7 @@ It is a Fabric-only port of [Pl3xMarkers](https://modrinth.com/plugin/pl3xmarker
 - Cross-dimensional player markers
 - Optional Open Parties and Claims claim areas
 - OPAC claim names and colors refresh automatically without restarting
+- OPAC subclaims have separate areas with their own names and colors
 - Optional live warp markers from Fabric Essentials, Essential Commands, and HuskHomes
 - Optional live Waystones markers, including sharestones
 - Optional last-death markers with configurable expiry
@@ -82,9 +83,12 @@ Exclusions are saved in `config/squaremarkers/hidden-markers.json` and survive
 reloads, restarts and source deletion. `show` also clears exclusions for absent
 sources, including disabled layers. A recreated marker with the same identity
 stays hidden until shown. Warps use their source/name identity: renaming a warp
-creates a new identity. OPAC visibility applies to an owner's complete claim
-group in that dimension, rather than unstable polygon fragments; an owner name
-change creates a new identity. Status reads cached data without scans or database
+creates a new identity. OPAC supports hiding an individual subclaim or all of an
+owner's claims in that dimension, rather than unstable polygon fragments.
+Owner/subclaim IDs remain stable when display names change. Existing owner-name
+exclusions are migrated to the owner's UUID when that owner is identified, so
+subsequent name changes preserve visibility. Showing a subclaim does not
+override a hidden owner; show the owner entry first. Status reads cached data without scans or database
 requests; enabled integration status is not a guarantee of integration health.
 
 ### Player death markers
@@ -98,11 +102,14 @@ Enable it explicitly under `marker-settings`:
     priority: 50
     # Marker lifetime in seconds.
     lifetime: 1800
+    # UTC, Europe/Brussels, Europe/London, or a fixed offset such as UTC+01:00.
+    timezone: UTC
 ```
 
 `lifetime` is in seconds (1–604800); the default is 30 minutes. Only the last
 death per player is retained, including across dimensions. Markers use
-`death.png` and show the player's name, coordinates and UTC death/expiry times.
+`death.png` and show the player's name, coordinates and time of death in the configured timezone
+(`yyyy-MM-dd HH:mm:ss`, without milliseconds or the expiry timestamp).
 They are not removed by respawning or collecting items, only by expiry or a new
 death. Unmapped worlds are not recorded. With this feature enabled, death
 locations are visible even for players hidden by squaremap's live-player setting;
@@ -115,6 +122,14 @@ tick expires markers without scanning chunks or creating per-player threads.
 At most 10000 latest-death records are retained; at the limit the oldest is
 replaced. New config options are added without overwriting existing settings.
 
+`timezone` defaults to `UTC`. Use `Europe/Brussels` for Belgian time (CET/CEST)
+or `Europe/London` for UK time (GMT/BST); daylight-saving rules are applied at
+the time of each death, not the time the popup is viewed. A fixed offset such
+as `UTC+01:00` does not adjust for summer time. Avoid ambiguous abbreviations
+such as `BST` or `CEST+1`; an invalid zone produces a warning and falls back to
+UTC. Run `/squaremarkers reload` after changing it. This changes the display
+of existing death records too, without changing the actual death or expiry time.
+
 The configuration is generated at `config/squaremarkers/config.yml` on first startup. Run `/squaremarkers reload` from the console or as an operator after editing it. Marker data is stored in per-world JSON files below
 `config/squaremarkers/`.
 
@@ -122,7 +137,20 @@ The public squaremap API does not expose permanent always-visible labels.
 Therefore `always-show-name` and `always-show-text` use squaremap hover tooltips.
 Click popups remain available where applicable.
 
-OPAC claim names and colors are checked in memory every 30 seconds. Only changed
+OPAC main claims and subclaims are drawn separately, even when their names and
+colors are identical. Subclaims use their effective OPAC name/color, inheriting
+the main configuration where OPAC applies inheritance. Claim/unclaim and chunk
+reassignment events are grouped per server tick, rebuilding only affected groups.
+A single background worker calculates boundaries from snapshots. A spatial index
+avoids comparing every disconnected island with every other island. Stale results
+are discarded, and at most 128 polygons per world are published or removed per
+tick. Large groups can therefore take several ticks to finish updating. Existing
+markers remain available while replacement geometry is calculated; updates are
+applied progressively. No worker is started until there is geometry to calculate.
+No additional setting is needed beyond enabling the existing OPAC integration.
+
+OPAC claim names and colors are checked in memory every 30 seconds. One
+representative is read per active claim group, not every claimed chunk. Only changed
 marker styles and labels are updated, without recalculating claim geometry.
 Configure the interval in seconds with
 `marker-settings.open-parties-and-claims.metadata-refresh-interval` (5–3600).
