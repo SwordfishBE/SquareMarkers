@@ -17,6 +17,7 @@ import xyz.jpenilla.squaremap.api.MapWorld;
 public class Layers {
 
 	private static final Set<LayerFactory> ALL = new HashSet<>(Set.of(
+            new LayerFactory(DeathMarkerLayer::new, unused -> MarkersConfig.DEATH_MARKERS_ENABLED),
 			new LayerFactory(
 					BeaconMarkerLayer::new,
 					_ -> MarkersConfig.BEACON_MARKERS_ENABLED
@@ -66,6 +67,7 @@ public class Layers {
 	}
 
 	public static class Keys {
+        public static final String DEATHS = "deaths";
 		public static String BEACONS = "beacons";
 		public static String END_GATEWAYS = "end_gateways";
 		public static String END_PORTALS = "end_portals";

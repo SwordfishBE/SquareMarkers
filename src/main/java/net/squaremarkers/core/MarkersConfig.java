@@ -53,6 +53,12 @@ public final class MarkersConfig {
             priority: 50
             # Marker lifetime in seconds.
             lifetime: 3
+          deaths:
+            # Death locations are public on squaremap. Opt in explicitly.
+            enabled: false
+            priority: 50
+            # Marker lifetime in seconds.
+            lifetime: 1800
           open-parties-and-claims:
             enabled: true
             priority: 40
@@ -104,6 +110,9 @@ public final class MarkersConfig {
     public static boolean LIGHTNING_MARKERS_ENABLED = true;
     public static int LIGHTNING_MARKERS_PRIORITY = 50;
     public static int LIGHTNING_MARKERS_LIFETIME = 3;
+    public static boolean DEATH_MARKERS_ENABLED = false;
+    public static int DEATH_MARKERS_PRIORITY = 50;
+    public static int DEATH_MARKERS_LIFETIME = 1800;
 
     private MarkersConfig() {
     }
@@ -150,6 +159,9 @@ public final class MarkersConfig {
             LIGHTNING_MARKERS_ENABLED = getBoolean("marker-settings.lightning.enabled", true);
             LIGHTNING_MARKERS_PRIORITY = getInt("marker-settings.lightning.priority", 50);
             LIGHTNING_MARKERS_LIFETIME = getInt("marker-settings.lightning.lifetime", 3, 0, 86_400);
+            DEATH_MARKERS_ENABLED = getBoolean("marker-settings.deaths.enabled", false);
+            DEATH_MARKERS_PRIORITY = getInt("marker-settings.deaths.priority", 50);
+            DEATH_MARKERS_LIFETIME = getInt("marker-settings.deaths.lifetime", 1800, 1, 604_800);
         } catch (IOException | IllegalArgumentException exception) {
             SquareMarkersCore.warn("Failed to load config", exception);
         }

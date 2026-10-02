@@ -99,6 +99,16 @@ public final class SquaremapHandler {
             .forEach(CrossDimensionPlayerMarkerLayer::update);
     }
 
+    public List<MarkerLayer<?>> activeLayers() {
+        return layers.values().stream().flatMap(value -> value.values().stream())
+            .sorted(java.util.Comparator.comparing((MarkerLayer<?> layer) -> layer.worldIdentifier)
+                .thenComparing(MarkerLayer::getKey)).toList();
+    }
+
+    public MarkerLayer<?> findLayer(String world, String key) {
+        return layers.getOrDefault(world, Map.of()).get(key);
+    }
+
     public void close() {
         List.copyOf(layers.keySet()).forEach(this::unregisterWorld);
         layers.clear();

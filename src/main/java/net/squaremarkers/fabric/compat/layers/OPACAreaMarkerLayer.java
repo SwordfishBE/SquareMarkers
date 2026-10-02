@@ -2,6 +2,7 @@ package net.squaremarkers.fabric.compat.layers;
 
 import net.minecraft.server.MinecraftServer;
 import net.squaremarkers.core.SquareMarkersCore;
+import net.squaremarkers.core.MarkerVisibility;
 import net.squaremarkers.core.helpers.HtmlHelper;
 import net.squaremarkers.core.helpers.PolygonLoops;
 import net.squaremarkers.core.interfaces.entities.IMarker;
@@ -32,7 +33,11 @@ public final class OPACAreaMarkerLayer extends MarkerLayer<IMarker> {
     private boolean loadFailureLogged;
 
     public OPACAreaMarkerLayer(MapWorld world) {
-        super(Layers.Keys.OPAC, Layers.Labels.OPAC, world, FabricMarkersConfig.OPAC_MARKERS_PRIORITY);
+        this(world, SquareMarkersCore.visibility());
+    }
+
+    OPACAreaMarkerLayer(MapWorld world, MarkerVisibility visibility) {
+        super(Layers.Keys.OPAC, Layers.Labels.OPAC, world, FabricMarkersConfig.OPAC_MARKERS_PRIORITY, visibility);
     }
 
     @Override
@@ -183,6 +188,12 @@ public final class OPACAreaMarkerLayer extends MarkerLayer<IMarker> {
             keys.add(key);
         });
         renderedKeys.put(claim.key, keys);
+    }
+
+    @Override
+    protected String visibilityKey(String markerKey) {
+        // Strip only the generated polygon counter; hide the complete owner's claim group.
+        return markerKey.substring(0, markerKey.lastIndexOf(':'));
     }
 
     public MinecraftServer getServer() {

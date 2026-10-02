@@ -6,6 +6,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WarpConfigMigrationTest {
+    @Test void deathLifetimeCommentPreservesValuesCommentsAndLineEndings() {
+        String existing = "marker-settings:\r\n    deaths:\r\n        enabled: true\r\n"
+            + "        # My custom duration\r\n        lifetime: 120 # preserve me\r\n";
+        String updated = WarpConfigMigration.addMissingOptions(existing);
+        assertTrue(updated.contains("        # My custom duration\r\n"
+            + "        # Marker lifetime in seconds.\r\n        lifetime: 120 # preserve me\r\n"));
+        assertEquals("120", MarkersConfig.parse(updated.lines().toList()).get("marker-settings.deaths.lifetime"));
+        assertEquals(updated, WarpConfigMigration.addMissingOptions(updated));
+        assertTrue(WarpConfigMigration.addMissingOptions("").contains("# Marker lifetime in seconds.\n    lifetime: 1800"));
+    }
+    @Test void deathOptionsDefaultToPrivateAndPreserveCustomValues() {
+        String existing = "marker-settings:\n  deaths:\n    enabled: true\n    lifetime: 90 # keep\n";
+        String updated = WarpConfigMigration.addMissingOptions(existing);
+        var parsed = MarkersConfig.parse(updated.lines().toList());
+        assertEquals("true", parsed.get("marker-settings.deaths.enabled"));
+        assertEquals("90", parsed.get("marker-settings.deaths.lifetime"));
+        assertEquals("50", parsed.get("marker-settings.deaths.priority"));
+        assertEquals(updated, WarpConfigMigration.addMissingOptions(updated));
+        parsed = MarkersConfig.parse(WarpConfigMigration.addMissingOptions("").lines().toList());
+        assertEquals("false", parsed.get("marker-settings.deaths.enabled"));
+        assertEquals("1800", parsed.get("marker-settings.deaths.lifetime"));
+    }
     @Test
     void addsOpacMetadataIntervalWithoutChangingExistingChoices() {
         String existing = "marker-settings:\n    open-parties-and-claims:\n"

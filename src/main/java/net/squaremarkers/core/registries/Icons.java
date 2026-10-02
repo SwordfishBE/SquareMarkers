@@ -7,6 +7,7 @@ import java.util.Set;
 public class Icons {
 
     public static Set<IconImageAddress> ALL = Set.of(
+            new IconImageAddress("/assets/squaremarkers/icons/", Keys.DEATH, "png"),
             new IconImageAddress("/assets/squaremarkers/icons/", Keys.BEACON, "png"),
             new IconImageAddress("/assets/squaremarkers/icons/", Keys.END_GATEWAY, "png"),
             new IconImageAddress("/assets/squaremarkers/icons/", Keys.END_PORTAL, "png"),
@@ -18,6 +19,7 @@ public class Icons {
     );
 
     public static class Keys {
+        public static final String DEATH = "squaremarkers_death";
         public static final String BEACON = "squaremarkers_beacon";
         public static final String END_GATEWAY = "squaremarkers_end_gateway";
         public static final String END_PORTAL = "squaremarkers_end_portal";

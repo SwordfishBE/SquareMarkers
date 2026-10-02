@@ -24,6 +24,9 @@ import net.squaremarkers.fabric.compat.waystones.WaystoneMarkerLayer;
 import net.squaremarkers.fabric.compat.waystones.WaystonesHandler;
 import net.squaremarkers.fabric.listeners.UseItemOnListener;
 import net.squaremarkers.fabric.util.ModrinthUpdateChecker;
+import net.squaremarkers.core.DeathMarkers;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.minecraft.server.level.ServerPlayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,8 +82,15 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 	    }, FabricMarkersConfig::reload);
         // register events
 		ServerLifecycleEvents.AFTER_SAVE.register(
-			(server, flush, force) -> storage.write()
+			(server, flush, force) -> { storage.write(); DeathMarkers.save(); }
 		);
+        ServerLivingEntityEvents.AFTER_DEATH.register((entity, damage) -> {
+            if (entity instanceof ServerPlayer player) {
+                var pos = player.blockPosition();
+                DeathMarkers.record(player.getUUID(), player.getGameProfile().name(),
+                    player.level().dimension().identifier().toString(), pos.getX(), pos.getY(), pos.getZ());
+            }
+        });
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
 			ticks = 0;
 			SquareMarkersCore.server(server);
@@ -117,6 +127,7 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 				WaystonesHandler.flushPending(server);
 			}
 			if (++ticks % 20 == 0) {
+                DeathMarkers.tick();
 				SquareMarkersCore.squaremapHandler().updateDynamicLayers();
 				WarpHandler.refresh();
 				if (isOpacEnabled()) {
@@ -129,6 +140,9 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 		});
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> dispatcher.register(
 			Commands.literal("squaremarkers")
+				.requires(MarkerCommands::allowed)
+				.then(MarkerCommands.statusCommand())
+				.then(MarkerCommands.markerCommand())
 				.then(Commands.literal("reload").executes(context -> reload(context.getSource())))
 		));
 	    BlockEvents.USE_ITEM_ON.register(new UseItemOnListener());

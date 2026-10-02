@@ -10,6 +10,7 @@ import java.nio.file.Path;
 public final class SquareMarkersCore {
     private static final SquaremapHandler SQUAREMAP_HANDLER = new SquaremapHandler();
     private static final IApi API = new Api();
+    private static final MarkerVisibility VISIBILITY = new MarkerVisibility(getMainDir().resolve("hidden-markers.json"));
     private static IStorage storage;
     private static ILogger logger;
     private static Runnable reloadConfig = MarkersConfig::reload;
@@ -26,6 +27,8 @@ public final class SquareMarkersCore {
     }
 
     public static void onStarted() {
+        VISIBILITY.load();
+        DeathMarkers.start();
         SQUAREMAP_HANDLER.initialize();
         debug("Loaded config and markers");
     }
@@ -43,6 +46,8 @@ public final class SquareMarkersCore {
 
     public static void onDisable() {
         SQUAREMAP_HANDLER.close();
+        DeathMarkers.stop();
+        VISIBILITY.clearRuntime();
         if (storage != null) {
             storage.close();
         }
@@ -62,6 +67,8 @@ public final class SquareMarkersCore {
     public static IApi api() {
         return API;
     }
+
+    public static MarkerVisibility visibility() { return VISIBILITY; }
 
     public static SquaremapHandler squaremapHandler() {
         return SQUAREMAP_HANDLER;

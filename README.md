@@ -24,6 +24,8 @@ It is a Fabric-only port of [Pl3xMarkers](https://modrinth.com/plugin/pl3xmarker
 - OPAC claim names and colors refresh automatically without restarting
 - Optional live warp markers from Fabric Essentials, Essential Commands, and HuskHomes
 - Optional live Waystones markers, including sharestones
+- Optional last-death markers with configurable expiry
+- Persistently hide/show individual markers and inspect status through admin commands
 - Configurable layer priorities, labels, feedback, and individual marker types
 
 ---
@@ -50,6 +52,68 @@ Basic HTML is accepted in area names: `b`, `i`, `u`, `br`, and a `span` with a h
 ---
 
 ## ⚙️ Configuration and commands
+
+### Marker visibility and status
+
+These commands require console access or gamemaster command permissions:
+
+```text
+/squaremarkers status
+/squaremarkers status details
+/squaremarkers marker list
+/squaremarkers marker list "minecraft:overworld" nether_portals
+/squaremarkers marker list "minecraft:overworld" nether_portals 2
+/squaremarkers marker hide "minecraft:overworld" nether_portals "100:64:200"
+/squaremarkers marker show "minecraft:overworld" nether_portals "100:64:200"
+```
+
+`status` shows a compact seven-line summary. Green means enabled/visible,
+yellow means disabled/hidden, and dark gray means not installed. Use
+`status details` for integration names and per-world layer counts.
+
+Use the exact world, layer and ID from `marker list`, or tab completion. Lists
+have ten identities per page; labels help identify UUID-based markers. Quote
+dimensions, coordinate IDs, and names containing spaces. Hiding affects all
+squaremap viewers and does not delete the portal, warp, waystone or claim.
+Changes become visible on squaremap's next web update. Hidden markers continue
+to track source changes; showing restores their latest state immediately.
+
+Exclusions are saved in `config/squaremarkers/hidden-markers.json` and survive
+reloads, restarts and source deletion. `show` also clears exclusions for absent
+sources, including disabled layers. A recreated marker with the same identity
+stays hidden until shown. Warps use their source/name identity: renaming a warp
+creates a new identity. OPAC visibility applies to an owner's complete claim
+group in that dimension, rather than unstable polygon fragments; an owner name
+change creates a new identity. Status reads cached data without scans or database
+requests; enabled integration status is not a guarantee of integration health.
+
+### Player death markers
+
+Death locations are public on squaremap, so this feature defaults to disabled.
+Enable it explicitly under `marker-settings`:
+
+```yaml
+  deaths:
+    enabled: false
+    priority: 50
+    # Marker lifetime in seconds.
+    lifetime: 1800
+```
+
+`lifetime` is in seconds (1–604800); the default is 30 minutes. Only the last
+death per player is retained, including across dimensions. Markers use
+`death.png` and show the player's name, coordinates and UTC death/expiry times.
+They are not removed by respawning or collecting items, only by expiry or a new
+death. Unmapped worlds are not recorded. With this feature enabled, death
+locations are visible even for players hidden by squaremap's live-player setting;
+disable death markers or hide that player's death marker if privacy is required.
+
+Deaths are stored in `config/squaremarkers/deaths.json` on normal server saves
+and shutdown. Reload/restart does not reset expiry; offline time counts too.
+Changing the lifetime applies to new deaths only. The existing once-per-second
+tick expires markers without scanning chunks or creating per-player threads.
+At most 10000 latest-death records are retained; at the limit the oldest is
+replaced. New config options are added without overwriting existing settings.
 
 The configuration is generated at `config/squaremarkers/config.yml` on first startup. Run `/squaremarkers reload` from the console or as an operator after editing it. Marker data is stored in per-world JSON files below
 `config/squaremarkers/`.

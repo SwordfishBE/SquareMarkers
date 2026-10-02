@@ -20,8 +20,30 @@ final class WarpConfigMigration {
         updated = addSection(updated, "waystones", newline, List.of(
             new Option("enabled", "true"), new Option("priority", "50"),
             new Option("include-sharestones", "true"), new Option("include-undiscovered", "false")));
-        return addSection(updated, "open-parties-and-claims", newline, List.of(
+        updated = addSection(updated, "deaths", newline, List.of(
+            new Option("enabled", "false"), new Option("priority", "50"), new Option("lifetime", "1800")));
+        updated = addSection(updated, "open-parties-and-claims", newline, List.of(
             new Option("metadata-refresh-interval", "30")));
+        return addOptionComment(updated, "deaths", "lifetime", "# Marker lifetime in seconds.", newline);
+    }
+
+    private static String addOptionComment(String config, String section, String key, String comment, String newline) {
+        List<Line> lines = lines(config);
+        int parent = findHeader(lines, 0, lines.size(), 0, "marker-settings");
+        if (parent < 0) return config;
+        int parentEnd = nextSection(lines, parent + 1, 0);
+        int childIndent = contentIndent(lines, parent + 1, parentEnd, 2);
+        int child = findHeader(lines, parent + 1, parentEnd, childIndent, section);
+        if (child < 0) return config;
+        int childEnd = nextSection(lines, child + 1, childIndent);
+        int optionIndent = contentIndent(lines, child + 1, childEnd, childIndent * 2);
+        for (int index = child + 1; index < childEnd; index++) {
+            Line line = lines.get(index);
+            if (line.indent() != optionIndent || !line.text().startsWith(key + ":")) continue;
+            if (index > child + 1 && lines.get(index - 1).text().equals(comment)) return config;
+            return insert(config, line.start(), " ".repeat(optionIndent) + comment + newline, newline);
+        }
+        return config;
     }
 
     private static String addSection(String config, String section, String newline, List<Option> options) {
