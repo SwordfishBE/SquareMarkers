@@ -7,6 +7,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WarpConfigMigrationTest {
     @Test
+    void addsOpacMetadataIntervalWithoutChangingExistingChoices() {
+        String existing = "marker-settings:\n    open-parties-and-claims:\n"
+            + "        enabled: false\n        priority: 17\n";
+        String updated = WarpConfigMigration.addMissingOptions(existing);
+        var parsed = MarkersConfig.parse(updated.lines().toList());
+        assertEquals("false", parsed.get("marker-settings.open-parties-and-claims.enabled"));
+        assertEquals("17", parsed.get("marker-settings.open-parties-and-claims.priority"));
+        assertEquals("30", parsed.get("marker-settings.open-parties-and-claims.metadata-refresh-interval"));
+        assertEquals(updated, WarpConfigMigration.addMissingOptions(updated));
+        String customized = updated.replace("metadata-refresh-interval: 30", "metadata-refresh-interval: 120");
+        assertEquals(customized, WarpConfigMigration.addMissingOptions(customized));
+    }
+    @Test
     void preservesDisabledIntegrationsWithDifferentIndentation() {
         for (int width : new int[]{1, 2, 4, 6}) {
             String existing = "marker-settings:\r\n" + " ".repeat(width) + "huskhomes-warps:\r\n"

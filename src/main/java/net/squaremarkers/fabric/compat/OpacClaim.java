@@ -10,8 +10,8 @@ public class OpacClaim {
 
 	public final String key;
 	@Language("HTML")
-	public final String name;
-	public final int color;
+	public String name;
+	public int color;
 
 	private final Map<ChunkPos, OpacChunk> chunks;
 

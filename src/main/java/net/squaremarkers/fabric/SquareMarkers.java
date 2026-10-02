@@ -119,6 +119,9 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			if (++ticks % 20 == 0) {
 				SquareMarkersCore.squaremapHandler().updateDynamicLayers();
 				WarpHandler.refresh();
+				if (isOpacEnabled()) {
+					OpacHandler.tickMetadata(server);
+				}
 			}
 			if (ticks % 6000 == 0 && HuskHomesWarpHandler.installed()) {
 				HuskHomesWarpHandler.refreshAsync();

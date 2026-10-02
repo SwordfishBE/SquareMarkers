@@ -4,6 +4,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.ChunkPos;
 import net.squaremarkers.fabric.SquareMarkers;
+import net.squaremarkers.fabric.FabricMarkersConfig;
+import net.squaremarkers.core.SquareMarkersCore;
 import net.squaremarkers.fabric.compat.layers.OPACAreaMarkerLayer;
 import xaero.pac.common.server.api.OpenPACServerAPI;
 import xaero.pac.common.server.claims.ServerClaimsManager;
@@ -19,6 +21,8 @@ public class OpacHandler {
 	private static final Map<String, OPACAreaMarkerLayer> ACTIVE_LAYERS = new ConcurrentHashMap<>();
 	private static MinecraftServer activeServer;
 	private static boolean listenerRegistered;
+	private static int metadataSeconds;
+	private static boolean metadataFailureLogged;
 
 	public static boolean isOpacLoaded(MinecraftServer server) {
 		return SquareMarkers.isOpacEnabled()
@@ -31,6 +35,8 @@ public class OpacHandler {
 			ACTIVE_LAYERS.clear();
 			activeServer = server;
 			listenerRegistered = false;
+			metadataSeconds = 0;
+			metadataFailureLogged = false;
 		}
 		ACTIVE_LAYERS.put(markerLayer.worldIdentifier, markerLayer);
 	}
@@ -58,6 +64,37 @@ public class OpacHandler {
 		ACTIVE_LAYERS.clear();
 		activeServer = null;
 		listenerRegistered = false;
+		metadataSeconds = 0;
+		metadataFailureLogged = false;
+	}
+
+	/** Called once per second; reads metadata once per server, not once per world. */
+	public static void tickMetadata(MinecraftServer server) {
+		if (activeServer != server || ACTIVE_LAYERS.isEmpty()) {
+			metadataSeconds = 0;
+			return;
+		}
+		if (++metadataSeconds < FabricMarkersConfig.OPAC_METADATA_REFRESH_INTERVAL) {
+			return;
+		}
+		metadataSeconds = 0;
+		try {
+			if (!isOpacLoaded(server)) return;
+			var layers = java.util.List.copyOf(ACTIVE_LAYERS.values());
+			OpenPACServerAPI.get(server).getServerClaimsManager().getPlayerInfoStream().forEach(player -> {
+				String owner = player.getPlayerUsername();
+				String name = player.getClaimsName();
+				int color = player.getClaimsColor();
+				String label = (name.isEmpty() ? "" : name + " - ") + owner + "'s claim";
+				layers.forEach(layer -> layer.updateMetadata(owner, label, color));
+			});
+			metadataFailureLogged = false;
+		} catch (RuntimeException exception) {
+			if (!metadataFailureLogged) {
+				SquareMarkersCore.warn("Failed to refresh Open Parties and Claims names/colors", exception);
+				metadataFailureLogged = true;
+			}
+		}
 	}
 
 	public static boolean isActiveLayer(OPACAreaMarkerLayer markerLayer) {

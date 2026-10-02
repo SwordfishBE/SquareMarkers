@@ -57,6 +57,8 @@ public final class MarkersConfig {
             enabled: true
             priority: 40
             always-show-name: true
+            # Check in-memory claim names/colors every this many seconds.
+            metadata-refresh-interval: 30
           fabric-essentials-warps:
             enabled: true
             priority: 50

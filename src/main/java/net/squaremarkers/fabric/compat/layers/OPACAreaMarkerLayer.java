@@ -15,6 +15,9 @@ import net.squaremarkers.fabric.compat.OpacClaim;
 import net.squaremarkers.fabric.compat.OpacHandler;
 import org.intellij.lang.annotations.Language;
 import xyz.jpenilla.squaremap.api.MapWorld;
+import xyz.jpenilla.squaremap.api.marker.Marker;
+import xyz.jpenilla.squaremap.api.marker.Polygon;
+import java.awt.Color;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -136,6 +139,27 @@ public final class OPACAreaMarkerLayer extends MarkerLayer<IMarker> {
 				}
 				return;
 			}
+        }
+    }
+
+    /** Reuses the existing geometry; unchanged metadata does not touch the provider. */
+    public synchronized void updateMetadata(String owner, String name, int color) {
+        OpacClaim claim = claims.get(owner);
+        if (claim == null || claim.name.equals(name) && claim.color == color) return;
+        claim.name = name;
+        claim.color = color;
+        Color renderedColor = new Color(color & 0x00FFFFFF);
+        String label = HtmlHelper.sanitize(name);
+        for (String key : renderedKeys.getOrDefault(claim.key, List.of())) {
+            if (!(renderedMarker(key) instanceof Polygon previous)) continue;
+            var options = previous.markerOptions().asBuilder()
+                .fillColor(renderedColor).strokeColor(renderedColor);
+            if (FabricMarkersConfig.OPAC_MARKERS_ALWAYS_SHOW_NAME) {
+                options.hoverTooltip(label);
+            } else {
+                options.clickTooltip(label);
+            }
+            addMarker(key, Marker.polygon(previous.mainPolygon(), previous.negativeSpace()).markerOptions(options));
         }
     }
 

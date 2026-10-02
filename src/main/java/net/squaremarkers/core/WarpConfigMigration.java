@@ -17,9 +17,11 @@ final class WarpConfigMigration {
             new Option("enabled", "true"), new Option("priority", "50")));
         updated = addSection(updated, "huskhomes-warps", newline, List.of(
             new Option("enabled", "true"), new Option("priority", "50")));
-        return addSection(updated, "waystones", newline, List.of(
+        updated = addSection(updated, "waystones", newline, List.of(
             new Option("enabled", "true"), new Option("priority", "50"),
             new Option("include-sharestones", "true"), new Option("include-undiscovered", "false")));
+        return addSection(updated, "open-parties-and-claims", newline, List.of(
+            new Option("metadata-refresh-interval", "30")));
     }
 
     private static String addSection(String config, String section, String newline, List<Option> options) {

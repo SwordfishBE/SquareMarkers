@@ -25,6 +25,31 @@ class MarkerLayerRegressionTest {
     @TempDir Path directory;
 
     @Test
+    void opacMetadataUpdatesPreserveGeometryAndLeaveUnchangedMarkersAlone() {
+        var layer = new OPACAreaMarkerLayer(world());
+        for (int x = 0; x < 3; x++) for (int z = 0; z < 3; z++) {
+            if (x != 1 || z != 1) layer.addChunk(chunk(x, z, "Owner"), true);
+        }
+        Polygon original = (Polygon) layer.provider().getMarkers().iterator().next();
+        layer.updateMetadata("Owner", "Claim - Owner's claim", 0x00ff00);
+        assertSame(original, layer.provider().getMarkers().iterator().next());
+        layer.updateMetadata("Other", "Unrelated", 0xff0000);
+        assertSame(original, layer.provider().getMarkers().iterator().next());
+        layer.updateMetadata("Owner", "New <script>name</script>", 0xff0000);
+        Polygon updated = (Polygon) layer.provider().getMarkers().iterator().next();
+        assertNotSame(original, updated);
+        assertEquals(original.mainPolygon(), updated.mainPolygon());
+        assertEquals(original.negativeSpace(), updated.negativeSpace());
+        assertEquals(java.awt.Color.RED, updated.markerOptions().fillColor());
+        assertEquals(java.awt.Color.RED, updated.markerOptions().strokeColor());
+        assertTrue(updated.markerOptions().hoverTooltip().contains("&lt;script&gt;"));
+        layer.updateMetadata("Owner", "New <script>name</script>", 0xff0000);
+        assertSame(updated, layer.provider().getMarkers().iterator().next());
+        layer.removeChunk(0, 0, true);
+        assertEquals(java.awt.Color.RED, layer.provider().getMarkers().iterator().next().markerOptions().fillColor());
+    }
+
+    @Test
     void opacGeometryMatchesEveryThreeByThreeClaimPattern() {
         for (int mask = 0; mask < 512; mask++) {
             var claim = new OpacClaim("Test", "Test", 0);

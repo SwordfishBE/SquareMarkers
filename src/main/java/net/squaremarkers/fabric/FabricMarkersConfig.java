@@ -5,6 +5,7 @@ import net.squaremarkers.core.MarkersConfig;
 public final class FabricMarkersConfig {
     public static boolean OPAC_MARKERS_ENABLED = true;
     public static int OPAC_MARKERS_PRIORITY = 40;
+    public static int OPAC_METADATA_REFRESH_INTERVAL = 30;
     public static boolean OPAC_MARKERS_ALWAYS_SHOW_NAME = true;
     public static boolean FABRIC_ESSENTIALS_WARPS_ENABLED = true;
     public static int FABRIC_ESSENTIALS_WARPS_PRIORITY = 50;
@@ -24,6 +25,7 @@ public final class FabricMarkersConfig {
         MarkersConfig.reload();
         OPAC_MARKERS_ENABLED = MarkersConfig.getBoolean("marker-settings.open-parties-and-claims.enabled", true);
         OPAC_MARKERS_PRIORITY = MarkersConfig.getInt("marker-settings.open-parties-and-claims.priority", 40);
+        OPAC_METADATA_REFRESH_INTERVAL = MarkersConfig.getInt("marker-settings.open-parties-and-claims.metadata-refresh-interval", 30, 5, 3600);
         OPAC_MARKERS_ALWAYS_SHOW_NAME = MarkersConfig.getBoolean("marker-settings.open-parties-and-claims.always-show-name", true);
         FABRIC_ESSENTIALS_WARPS_ENABLED = MarkersConfig.getBoolean("marker-settings.fabric-essentials-warps.enabled", true);
         FABRIC_ESSENTIALS_WARPS_PRIORITY = MarkersConfig.getInt("marker-settings.fabric-essentials-warps.priority", 50);

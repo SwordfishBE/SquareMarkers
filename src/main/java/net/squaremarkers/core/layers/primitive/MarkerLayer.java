@@ -104,6 +104,10 @@ public abstract class MarkerLayer<T> {
         return provider.hasMarker(toKey(markerKey));
     }
 
+    protected final @Nullable Marker renderedMarker(String markerKey) {
+        return provider.registeredMarkers().get(toKey(markerKey));
+    }
+
     public final void clearMarkers() {
         provider.clearMarkers();
     }
