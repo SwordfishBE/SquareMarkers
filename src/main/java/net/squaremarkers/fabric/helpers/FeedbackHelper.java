@@ -49,6 +49,7 @@ public class FeedbackHelper {
 	}
 
 	public static void sendOverlayMessage(ServerPlayer player, String message, int color) {
+		if (message == null || message.isEmpty()) return;
 		player.sendOverlayMessage(
 				Component.nullToEmpty(message).toFlatList(Style.EMPTY.withColor(color)).getFirst()
 		);
@@ -76,6 +77,7 @@ public class FeedbackHelper {
 	private static int color(InteractionResult.State state) {
 		return switch (state) {
 			case ADDED -> 0x59ff59;
+			case FEEDBACK -> 0x9bb1bb;
 			case REMOVED -> 0x6a6a6a;
 			case FAILURE -> 0xff5959;
 			default -> 0xffffff;
@@ -85,6 +87,7 @@ public class FeedbackHelper {
 	private static SoundEvent sound(InteractionResult.State state) {
 		return switch (state) {
 			case ADDED -> SoundEvents.EXPERIENCE_ORB_PICKUP;
+			case FEEDBACK -> SoundEvents.UI_BUTTON_CLICK.value();
 			case REMOVED -> SoundEvents.LAVA_EXTINGUISH;
 			case FAILURE -> SoundEvents.VILLAGER_NO;
 			default -> SoundEvents.NETHER_WOOD_HIT;

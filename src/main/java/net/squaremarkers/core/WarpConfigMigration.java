@@ -50,10 +50,14 @@ final class WarpConfigMigration {
     }
 
     private static String addSection(String config, String section, String newline, List<Option> options) {
+        return addSection(config, "marker-settings", section, newline, options);
+    }
+
+    static String addSection(String config, String root, String section, String newline, List<Option> options) {
         List<Line> lines = lines(config);
-        int parent = findHeader(lines, 0, lines.size(), 0, "marker-settings");
+        int parent = findHeader(lines, 0, lines.size(), 0, root);
         if (parent < 0) {
-            String block = "marker-settings:" + newline + sectionBlock(section, options, newline, 2, 4);
+            String block = root + ":" + newline + sectionBlock(section, options, newline, 2, 4);
             return insert(config, config.length(), block, newline);
         }
 
@@ -170,6 +174,6 @@ final class WarpConfigMigration {
     private record Line(int start, int indent, String text) {
     }
 
-    private record Option(String key, String defaultValue) {
+    record Option(String key, String defaultValue) {
     }
 }

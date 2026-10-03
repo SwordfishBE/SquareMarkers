@@ -1,6 +1,7 @@
 package net.squaremarkers.core.layers.primitive;
 
 import net.squaremarkers.core.SquareMarkersCore;
+import net.squaremarkers.core.FeedbackMessages;
 import net.squaremarkers.core.helpers.HtmlHelper;
 import net.squaremarkers.core.interfaces.ISimpleMarkerRepository;
 import net.squaremarkers.core.interfaces.entities.ISimpleMarker;
@@ -56,7 +57,16 @@ public abstract class SimpleMarkerLayer extends StoredMarkerLayer<ISimpleMarker,
      */
     public InteractionResult add(int x, int y, int z) {
         boolean added = addInternal(x, y, z);
-        return added ? InteractionResult.added("Added " + tooltip + " marker") : InteractionResult.skip();
+        return added ? InteractionResult.added(FeedbackMessages.MARKER_ADD.text("type", tooltip)) : InteractionResult.skip();
+    }
+
+    /** Shows an existing marker's name without creating or changing a marker. */
+    public InteractionResult interact(int x, int y, int z) {
+        var marker = getRepository().get(x, y, z);
+        if (marker == null || marker.getName() == null || marker.getName().isEmpty()) {
+            return InteractionResult.skip();
+        }
+        return InteractionResult.feedback(FeedbackMessages.MARKER_INTERACT.text("type", tooltip, "name", marker.getName()));
     }
 
     @Override
@@ -93,12 +103,12 @@ public abstract class SimpleMarkerLayer extends StoredMarkerLayer<ISimpleMarker,
     public InteractionResult setName(int x, int y, int z, String newName) {
         var marker = getMarker(toMarkerKey(x, y, z));
         if (marker.isPresent() && marker.get().getName() != null && marker.get().getName().equals(newName)) {
-            return InteractionResult.skip();
+            return interact(x, y, z);
         }
         boolean named = setNameInternal(x, y, z, newName);
         return named
-                ? InteractionResult.added("Renamed " + tooltip + " marker to '" + newName + "'")
-                : InteractionResult.failure("Could not rename " + tooltip + " marker");
+                ? InteractionResult.added(FeedbackMessages.MARKER_RENAME.text("type", tooltip, "name", newName))
+                : InteractionResult.failure(FeedbackMessages.MARKER_RENAME_FAILED.text("type", tooltip));
     }
 
     final protected boolean setNameInternal(int x, int y, int z, String newName) {
@@ -120,8 +130,8 @@ public abstract class SimpleMarkerLayer extends StoredMarkerLayer<ISimpleMarker,
      */
     public InteractionResult setColor(int x, int y, int z, int newColor) {
         boolean colored = setColorInternal(x, y, z, newColor);
-        return colored ? InteractionResult.added("Colored " + tooltip + " marker") : InteractionResult.failure(
-                "Could not color " + tooltip + " marker");
+        return colored ? InteractionResult.added(FeedbackMessages.MARKER_COLOR.text("type", tooltip)) : InteractionResult.failure(
+                FeedbackMessages.MARKER_COLOR_FAILED.text("type", tooltip));
     }
 
     final protected boolean setColorInternal(int x, int y, int z, int newColor) {
@@ -159,7 +169,7 @@ public abstract class SimpleMarkerLayer extends StoredMarkerLayer<ISimpleMarker,
      */
     public InteractionResult remove(int x, int y, int z) {
         boolean removed = removeInternal(x, y, z);
-        return removed ? InteractionResult.removed("Removed " + tooltip + " marker") : InteractionResult.skip();
+        return removed ? InteractionResult.removed(FeedbackMessages.MARKER_REMOVE.text("type", tooltip)) : InteractionResult.skip();
     }
 
     @Override

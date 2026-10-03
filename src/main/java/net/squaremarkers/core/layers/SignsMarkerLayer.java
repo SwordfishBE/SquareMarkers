@@ -1,6 +1,7 @@
 package net.squaremarkers.core.layers;
 
 import net.squaremarkers.core.MarkersConfig;
+import net.squaremarkers.core.FeedbackMessages;
 import net.squaremarkers.core.SquareMarkersCore;
 import net.squaremarkers.core.helpers.HtmlHelper;
 import net.squaremarkers.core.interfaces.ISignMarkerRepository;
@@ -55,7 +56,7 @@ public class SignsMarkerLayer extends StoredMarkerLayer<ISignMarker, ISignMarker
 	 */
 	public InteractionResult set(int x, int y, int z, @Language("HTML") String[] text) {
 		if (text == null || text.length != 4) {
-			return InteractionResult.failure("Text should be a String array with a size of 4");
+			return InteractionResult.failure(FeedbackMessages.SIGN_INVALID_TEXT.text());
 		}
 		boolean edited = false;
 		if (hasMarker(toMarkerKey(x, y, z))) {
@@ -65,7 +66,7 @@ public class SignsMarkerLayer extends StoredMarkerLayer<ISignMarker, ISignMarker
 		loadMarker(
 				getRepository().editOrCreate(x, y, z, text)
 		);
-		return InteractionResult.added(edited ? "Edited sign marker" : "Added sign marker");
+		return InteractionResult.added(edited ? FeedbackMessages.SIGN_EDIT.text() : FeedbackMessages.SIGN_ADD.text());
 	}
 
 	/**
@@ -79,7 +80,7 @@ public class SignsMarkerLayer extends StoredMarkerLayer<ISignMarker, ISignMarker
 		var removed = getRepository().remove(x, y, z);
 		if (removed) {
 			super.removeMarker(toMarkerKey(x, y, z));
-			return InteractionResult.removed("Removed sign marker");
+			return InteractionResult.removed(FeedbackMessages.SIGN_REMOVE.text());
 		}
 		return InteractionResult.skip();
 	}

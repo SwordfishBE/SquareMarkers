@@ -1,6 +1,7 @@
 package net.squaremarkers.core.layers.primitive;
 
 import net.squaremarkers.core.MarkersConfig;
+import net.squaremarkers.core.FeedbackMessages;
 import net.squaremarkers.core.SquareMarkersCore;
 import net.squaremarkers.core.helpers.ConvexHull;
 import net.squaremarkers.core.helpers.HtmlHelper;
@@ -150,11 +151,11 @@ public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerR
 		    loadMarker(area);
 			revision++;
 		    if (area.getPoints().size() == 1) {
-			    return InteractionResult.added("Created area: " + label);
+			    return InteractionResult.added(FeedbackMessages.AREA_CREATE.text("label", label));
 		    }
-		    return InteractionResult.added("Added point to area: " + label);
+		    return InteractionResult.added(FeedbackMessages.AREA_POINT_ADD.text("label", label));
         }
-	    return InteractionResult.failure("Could not add point to area: " + label);
+	    return InteractionResult.failure(FeedbackMessages.AREA_POINT_ADD_FAILED.text("label", label));
     }
 
     /**
@@ -168,11 +169,11 @@ public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerR
 				boundaries.remove(area.getKey());
 			    getRepository().remove(label, color);
 				revision++;
-			    return InteractionResult.removed("Removed area: " + label);
+			    return InteractionResult.removed(FeedbackMessages.AREA_REMOVE.text("label", label));
 		    }
 			loadMarker(area);
 			revision++;
-		    return InteractionResult.removed("Removed point from area: " + label);
+	    return InteractionResult.removed(FeedbackMessages.AREA_POINT_REMOVE.text("label", label));
         }
 	    return InteractionResult.skip();
     }

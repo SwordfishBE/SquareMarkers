@@ -46,6 +46,7 @@ Basic HTML is accepted in area names: `b`, `i`, `u`, `br`, and a `span` with a h
 ## 🔨 Other automatic markers
 
 - Travel through a Nether portal to register it.
+- Rename a Nether portal by right-clicking its purple blocks with a named name tag in either hand. If both hands hold named tags, the main hand takes priority. Right-clicking a named portal displays its name in the action bar, including with an empty hand. A name tag with the existing name shows the name without consuming the tag. When renaming is disabled, name tags show the existing name without changing it or consuming a tag.
 - Activate a beacon to register it.
 - Place and edit a sign directly above a lodestone to register it.
 - End portals, end gateways, and lightning strikes are detected automatically.
@@ -53,6 +54,47 @@ Basic HTML is accepted in area names: `b`, `i`, `u`, `br`, and a `span` with a h
 ---
 
 ## ⚙️ Configuration and commands
+
+### Configurable feedback messages
+
+Player feedback can be customized under the root `messages` section in
+`config/squaremarkers/config.yml`. All 18 templates have English defaults.
+Existing configuration files receive missing templates without replacing custom
+values or other settings. Run `/squaremarkers reload` to apply edits.
+
+```yaml
+messages:
+  marker:
+    add: "Added {type} marker"
+    rename: "Renamed {type} marker to '{name}'"
+    interact: "{name}"
+    rename-failed: "Could not rename {type} marker"
+    color: "Colored {type} marker"
+    color-failed: "Could not color {type} marker"
+    remove: "Removed {type} marker"
+  area:
+    create: "Created area: {label}"
+    point-add: "Added point to area: {label}"
+    point-add-failed: "Could not add point to area: {label}"
+    remove: "Removed area: {label}"
+    point-remove: "Removed point from area: {label}"
+    enter: "[+] {name}"
+    leave: "[-] {name}"
+  sign:
+    invalid-text: "Text should be a String array with a size of 4"
+    add: "Added sign marker"
+    edit: "Edited sign marker"
+    remove: "Removed sign marker"
+```
+
+`{type}` is the marker type, `{name}` is the marker or entered/left area's name,
+and `{label}` is the area label for point operations. For example, set
+`messages.area.enter` to `"Welcome to {name}"`. Templates are plain text;
+colors continue to follow the existing feedback/area colors. Quote your text,
+especially when it contains `:` or `#`. Use `""` to suppress one message;
+feedback sounds still follow `settings.feedback.sound`. The existing
+`settings.feedback.messages` and `settings.feedback.area-enter` toggles keep
+their current behavior. These templates do not change console logging.
 
 ### Marker visibility and status
 

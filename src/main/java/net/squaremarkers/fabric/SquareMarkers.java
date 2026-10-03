@@ -146,7 +146,9 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 				.then(MarkerCommands.markerCommand())
 				.then(Commands.literal("reload").executes(context -> reload(context.getSource())))
 		));
-	    BlockEvents.USE_ITEM_ON.register(new UseItemOnListener());
+		var portalInteractions = new UseItemOnListener();
+		BlockEvents.USE_ITEM_ON.register(portalInteractions);
+		BlockEvents.USE_WITHOUT_ITEM.register(portalInteractions);
 		String version = FabricLoader.getInstance().getModContainer("squaremarkers")
 			.map(container -> container.getMetadata().getVersion().getFriendlyString())
 			.orElse("unknown");

@@ -7,6 +7,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.core.BlockPos;
 import net.squaremarkers.core.MarkersConfig;
+import net.squaremarkers.core.FeedbackMessages;
 import net.squaremarkers.core.SquareMarkersCore;
 import net.squaremarkers.core.interfaces.IBoundary;
 import net.squaremarkers.core.layers.primitive.AreaMarkerLayer;
@@ -76,10 +77,10 @@ public abstract class ServerPlayerMixin extends Player {
 			return;
 		}
 		if (previous != null) {
-			FeedbackHelper.sendOverlayMessage(player, "[-] " + previous.areaMarker().getName(), previous.areaMarker().getColor());
+			FeedbackHelper.sendOverlayMessage(player, FeedbackMessages.AREA_LEAVE.text("name", previous.areaMarker().getName()), previous.areaMarker().getColor());
 		}
 		if (current != null) {
-			FeedbackHelper.sendOverlayMessage(player, "[+] " + current.areaMarker().getName(), current.areaMarker().getColor());
+			FeedbackHelper.sendOverlayMessage(player, FeedbackMessages.AREA_ENTER.text("name", current.areaMarker().getName()), current.areaMarker().getColor());
 		}
 	}
 

@@ -14,6 +14,7 @@ import java.time.DateTimeException;
 import java.time.ZoneId;
 
 public final class MarkersConfig {
+    private static final com.google.gson.Gson GSON = new com.google.gson.Gson();
     private static final String DEFAULT_CONFIG = """
         # SquareMarkers configuration
         settings:
@@ -83,7 +84,7 @@ public final class MarkersConfig {
             priority: 50
             include-sharestones: true
             include-undiscovered: false
-        """;
+        """ + FeedbackMessages.defaultsYaml();
 
     private static Map<String, String> values = Map.of();
 
@@ -131,12 +132,13 @@ public final class MarkersConfig {
             }
             String config = Files.readString(path, StandardCharsets.UTF_8);
             parse(config.lines().toList()); // Reject ambiguous input before modifying the file.
-            String migrated = WarpConfigMigration.addMissingOptions(config);
+            String migrated = FeedbackMessages.addMissingOptions(WarpConfigMigration.addMissingOptions(config));
             Map<String, String> parsed = parse(migrated.lines().toList());
             if (!migrated.equals(config)) {
                 writeMigratedConfig(path, migrated);
             }
             values = parsed;
+            FeedbackMessages.reload(parsed);
             FEEDBACK_MESSAGES_ENABLED = getBoolean("settings.feedback.messages", true);
             FEEDBACK_SOUNDS_ENABLED = getBoolean("settings.feedback.sound", true);
             FEEDBACK_AREA_ENTER_ENABLED = getBoolean("settings.feedback.area-enter", true);
@@ -273,34 +275,53 @@ public final class MarkersConfig {
     }
 
     private static String stripComment(String line) {
-        boolean singleQuoted = false;
-        boolean doubleQuoted = false;
+        int separator = line.indexOf(':');
+        int comment = line.indexOf('#');
+        if (separator < 0 || (comment >= 0 && comment < separator)) {
+            return comment < 0 ? line : line.substring(0, comment);
+        }
+        int start = separator + 1;
+        while (start < line.length() && Character.isWhitespace(line.charAt(start))) start++;
+        if (start == line.length()) return line;
+        char quote = line.charAt(start);
+        if (quote != '\'' && quote != '"') {
+            return comment < 0 ? line : line.substring(0, comment);
+        }
         boolean escaped = false;
-        for (int index = 0; index < line.length(); index++) {
+        for (int index = start + 1; index < line.length(); index++) {
             char character = line.charAt(index);
             if (escaped) {
                 escaped = false;
                 continue;
             }
-            if (character == '\\' && doubleQuoted) {
+            if (character == '\\' && quote == '"') {
                 escaped = true;
                 continue;
             }
-            if (character == '\'' && !doubleQuoted) {
-                singleQuoted = !singleQuoted;
-            } else if (character == '"' && !singleQuoted) {
-                doubleQuoted = !doubleQuoted;
-            } else if (character == '#' && !singleQuoted && !doubleQuoted) {
-                return line.substring(0, index);
+            if (character == quote) {
+                if (quote == '\'' && index + 1 < line.length() && line.charAt(index + 1) == '\'') {
+                    index++;
+                    continue;
+                }
+                String remainder = line.substring(index + 1).stripLeading();
+                if (!remainder.isEmpty() && !remainder.startsWith("#")) {
+                    throw new IllegalArgumentException("Unexpected text after quoted configuration value: " + line.trim());
+                }
+                return line.substring(0, index + 1);
             }
         }
-        return line;
+        throw new IllegalArgumentException("Unterminated quoted configuration value: " + line.trim());
     }
 
     private static String unquote(String value) {
         if (value.length() >= 2 && ((value.startsWith("\"") && value.endsWith("\""))
             || (value.startsWith("'") && value.endsWith("'")))) {
-            return value.substring(1, value.length() - 1);
+            if (value.startsWith("'")) return value.substring(1, value.length() - 1).replace("''", "'");
+            try {
+                return GSON.fromJson(value, String.class);
+            } catch (com.google.gson.JsonParseException exception) {
+                throw new IllegalArgumentException("Invalid quoted configuration value: " + value, exception);
+            }
         }
         return value;
     }

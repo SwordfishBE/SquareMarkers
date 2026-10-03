@@ -22,7 +22,7 @@ public class NetherPortalMarkerLayer extends SimpleMarkerLayer {
     @Override
     public InteractionResult setName(int x, int y, int z, String newName) {
         if (!MarkersConfig.NETHER_PORTAL_MARKERS_RENAME) {
-            return InteractionResult.skip();
+            return interact(x, y, z);
         }
         return super.setName(x, y, z, newName);
     }
