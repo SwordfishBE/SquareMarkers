@@ -28,16 +28,25 @@ public final class DeathMarkerLayer extends MarkerLayer<DeathStore.Death> {
         return IconMarkerBuilder.newIconMarker(death.player(), Icons.Keys.DEATH, death.x(), death.z()).centerIcon(16, 16);
     }
     @Override protected String createTooltip(DeathStore.Death death) {
-        return HtmlHelper.sanitize(death.name()) + "'s last death";
+        return HtmlHelper.sanitize(FeedbackMessages.DEATH_TITLE.text("name", death.name()));
     }
     @Override protected String createPopup(DeathStore.Death death) {
-        return "<b>" + HtmlHelper.sanitize(death.name()) + "'s last death</b><br>"
-            + "Position: " + death.x() + ", " + death.y() + ", " + death.z()
-            + "<br>" + formatDeathTime(death.diedAt(), MarkersConfig.DEATH_MARKERS_TIMEZONE);
+        String title = createTooltip(death);
+        String position = HtmlHelper.sanitize(FeedbackMessages.DEATH_POSITION.text(
+            "x", Integer.toString(death.x()), "y", Integer.toString(death.y()), "z", Integer.toString(death.z())));
+        String time = HtmlHelper.sanitize(formatDeathTime(death.diedAt(), MarkersConfig.DEATH_MARKERS_TIMEZONE));
+        StringBuilder popup = new StringBuilder();
+        if (!title.isEmpty()) popup.append("<b>").append(title).append("</b>");
+        for (String line : new String[]{position, time}) {
+            if (line.isEmpty()) continue;
+            if (!popup.isEmpty()) popup.append("<br>");
+            popup.append(line);
+        }
+        return popup.toString();
     }
 
     static String formatDeathTime(long timestamp, ZoneId zone) {
         var time = Instant.ofEpochMilli(timestamp).atZone(zone);
-        return "Time of death (" + ZONE_LABEL.format(time) + "): " + DEATH_TIME.format(time);
+        return FeedbackMessages.DEATH_TIME.text("timezone", ZONE_LABEL.format(time), "time", DEATH_TIME.format(time));
     }
 }

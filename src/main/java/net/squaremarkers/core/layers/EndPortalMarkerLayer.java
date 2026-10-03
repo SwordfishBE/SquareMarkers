@@ -1,6 +1,7 @@
 package net.squaremarkers.core.layers;
 
 import net.squaremarkers.core.MarkersConfig;
+import net.squaremarkers.core.FeedbackMessages;
 import net.squaremarkers.core.helpers.HtmlHelper;
 import net.squaremarkers.core.interfaces.entities.ISimpleMarker;
 import net.squaremarkers.core.layers.primitive.SimpleMarkerLayer;
@@ -21,7 +22,7 @@ public class EndPortalMarkerLayer extends SimpleMarkerLayer {
                 createTooltip(object),
                 destinationKey(worldIdentifier),
                 100, 0,
-                "Go to The End"
+                FeedbackMessages.PORTAL_GO_TO_END.text()
         );
     }
 

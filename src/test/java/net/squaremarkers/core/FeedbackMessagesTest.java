@@ -23,7 +23,7 @@ class FeedbackMessagesTest {
         String updated = FeedbackMessages.addMissingOptions(input);
         var parsed = MarkersConfig.parse(updated.lines().toList());
         assertEquals("false", parsed.get("settings.feedback.messages"));
-        assertEquals(18, parsed.keySet().stream().filter(key -> key.startsWith("messages.")).count());
+        assertEquals(24, parsed.keySet().stream().filter(key -> key.startsWith("messages.")).count());
         for (var message : FeedbackMessages.values()) assertEquals(message.defaultText,
             parsed.get("messages." + message.group + "." + message.key));
         assertTrue(updated.startsWith(input));

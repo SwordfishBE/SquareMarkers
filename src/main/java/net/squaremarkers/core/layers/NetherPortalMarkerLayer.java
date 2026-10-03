@@ -1,6 +1,7 @@
 package net.squaremarkers.core.layers;
 
 import net.squaremarkers.core.MarkersConfig;
+import net.squaremarkers.core.FeedbackMessages;
 import net.squaremarkers.core.helpers.HtmlHelper;
 import net.squaremarkers.core.helpers.WorldHelpers;
 import net.squaremarkers.core.interfaces.entities.ISimpleMarker;
@@ -59,7 +60,8 @@ public class NetherPortalMarkerLayer extends SimpleMarkerLayer {
     }
 
     private String buttonText(String worldKey) {
-        return WorldHelpers.isOverworld(worldKey) ? "Go to Nether" : "Go to Overworld";
+        return (WorldHelpers.isOverworld(worldKey) ? FeedbackMessages.PORTAL_GO_TO_NETHER
+            : FeedbackMessages.PORTAL_GO_TO_OVERWORLD).text();
     }
 
     private String destinationKey(String worldKey) {

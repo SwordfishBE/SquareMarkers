@@ -58,7 +58,7 @@ Basic HTML is accepted in area names: `b`, `i`, `u`, `br`, and a `span` with a h
 ### Configurable feedback messages
 
 Player feedback can be customized under the root `messages` section in
-`config/squaremarkers/config.yml`. All 18 templates have English defaults.
+`config/squaremarkers/config.yml`. The 18 player-feedback templates and 6 map-text templates have English defaults.
 Existing configuration files receive missing templates without replacing custom
 values or other settings. Run `/squaremarkers reload` to apply edits.
 
@@ -85,6 +85,14 @@ messages:
     add: "Added sign marker"
     edit: "Edited sign marker"
     remove: "Removed sign marker"
+  death:
+    title: "{name}'s last death"
+    position: "Position: {x}, {y}, {z}"
+    time: "Time of death ({timezone}): {time}"
+  portal:
+    go-to-end: "Go to The End"
+    go-to-nether: "Go to Nether"
+    go-to-overworld: "Go to Overworld"
 ```
 
 `{type}` is the marker type, `{name}` is the marker or entered/left area's name,
@@ -95,6 +103,13 @@ especially when it contains `:` or `#`. Use `""` to suppress one message;
 feedback sounds still follow `settings.feedback.sound`. The existing
 `settings.feedback.messages` and `settings.feedback.area-enter` toggles keep
 their current behavior. These templates do not change console logging.
+
+The `death` and `portal` templates affect the web map, independently of in-game
+feedback toggles. Death titles use `{name}` for the player's name; position uses
+`{x}`, `{y}`, `{z}`; time uses `{timezone}` and `{time}` (formatted as
+`yyyy-MM-dd HH:mm:ss` in `marker-settings.deaths.timezone`). Set a death template
+to `""` to omit that line. Map text is sanitized with the existing safe HTML rules.
+Portal button labels change only the text; their destination and coordinates stay the same.
 
 ### Marker visibility and status
 

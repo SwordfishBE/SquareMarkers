@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-/** Plain-text player feedback. Inserted names are never interpreted as templates. */
+/** Configurable player feedback and map text. Inserted values are never interpreted as templates. */
 public enum FeedbackMessages {
     MARKER_ADD("marker", "add", "Added {type} marker"),
     MARKER_INTERACT("marker", "interact", "{name}"),
@@ -25,9 +25,15 @@ public enum FeedbackMessages {
     SIGN_INVALID_TEXT("sign", "invalid-text", "Text should be a String array with a size of 4"),
     SIGN_ADD("sign", "add", "Added sign marker"),
     SIGN_EDIT("sign", "edit", "Edited sign marker"),
-    SIGN_REMOVE("sign", "remove", "Removed sign marker");
+    SIGN_REMOVE("sign", "remove", "Removed sign marker"),
+    DEATH_TITLE("death", "title", "{name}'s last death"),
+    DEATH_POSITION("death", "position", "Position: {x}, {y}, {z}"),
+    DEATH_TIME("death", "time", "Time of death ({timezone}): {time}"),
+    PORTAL_GO_TO_END("portal", "go-to-end", "Go to The End"),
+    PORTAL_GO_TO_NETHER("portal", "go-to-nether", "Go to Nether"),
+    PORTAL_GO_TO_OVERWORLD("portal", "go-to-overworld", "Go to Overworld");
 
-    private static final Pattern PLACEHOLDERS = Pattern.compile("\\{(type|name|label)}");
+    private static final Pattern PLACEHOLDERS = Pattern.compile("\\{(type|name|label|x|y|z|timezone|time)}");
     private static Map<FeedbackMessages, String> templates = Map.of();
     final String group, key, defaultText;
 
@@ -58,7 +64,7 @@ public enum FeedbackMessages {
     }
 
     static String defaultsYaml() {
-        String config = "# Plain-text player feedback. Supported placeholders: {type}, {name}, {label}.\nmessages:\n";
+        String config = "# Player feedback and map text. See the README for each template's placeholders.\nmessages:\n";
         return addMissingOptions(config);
     }
 

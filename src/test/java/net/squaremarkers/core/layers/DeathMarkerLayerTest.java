@@ -34,7 +34,7 @@ class DeathMarkerLayerTest {
         var death = new DeathStore.Death("00000000-0000-0000-0000-000000000001", "Player", "minecraft:overworld",
             10, 65, 20, time, time + 1800_000);
         String popup = new DeathMarkerLayer(world).createPopup(death);
-        assertEquals("<b>Player's last death</b><br>Position: 10, 65, 20"
+        assertEquals("<b>Player&#39;s last death</b><br>Position: 10, 65, 20"
             + "<br>Time of death (UTC): 2026-10-02 14:15:10", popup);
     }
 }
