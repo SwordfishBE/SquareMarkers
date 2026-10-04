@@ -64,7 +64,14 @@ public enum FeedbackMessages {
     }
 
     static String defaultsYaml() {
-        String config = "# Player feedback and map text. See the README for each template's placeholders.\nmessages:\n";
+        String config = "# Player feedback and map text.\n"
+            + "# Supported placeholders: {type}, {name}, {label}, {x}, {y}, {z}, {timezone}, {time}.\n"
+            + "# Marker feedback: {type} = marker type, {name} = marker name.\n"
+            + "# Area feedback: {label} = area label, {name} = entered/left area's name.\n"
+            + "# Death text: {name} = player name; {x}, {y}, {z} = death coordinates.\n"
+            + "# Death time: {timezone} = configured timezone label, {time} = yyyy-MM-dd HH:mm:ss.\n"
+            + "# Placeholders only apply to the matching templates; sign and portal button text has no placeholders.\n"
+            + "messages:\n";
         return addMissingOptions(config);
     }
 
