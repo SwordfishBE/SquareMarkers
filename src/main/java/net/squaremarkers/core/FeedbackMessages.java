@@ -22,6 +22,7 @@ public enum FeedbackMessages {
     AREA_POINT_REMOVE("area", "point-remove", "Removed point from area: {label}"),
     AREA_ENTER("area", "enter", "[+] {name}"),
     AREA_LEAVE("area", "leave", "[-] {name}"),
+    AREA_PRESENCE("area", "presence", "{name}"),
     SIGN_INVALID_TEXT("sign", "invalid-text", "Text should be a String array with a size of 4"),
     SIGN_ADD("sign", "add", "Added sign marker"),
     SIGN_EDIT("sign", "edit", "Edited sign marker"),
@@ -67,7 +68,7 @@ public enum FeedbackMessages {
         String config = "# Player feedback and map text.\n"
             + "# Supported placeholders: {type}, {name}, {label}, {x}, {y}, {z}, {timezone}, {time}.\n"
             + "# Marker feedback: {type} = marker type, {name} = marker name.\n"
-            + "# Area feedback: {label} = area label, {name} = entered/left area's name.\n"
+            + "# Area feedback: {label} = area label, {name} = entered/left/current area's name.\n"
             + "# Death text: {name} = player name; {x}, {y}, {z} = death coordinates.\n"
             + "# Death time: {timezone} = configured timezone label, {time} = yyyy-MM-dd HH:mm:ss.\n"
             + "# Placeholders only apply to the matching templates; sign and portal button text has no placeholders.\n"

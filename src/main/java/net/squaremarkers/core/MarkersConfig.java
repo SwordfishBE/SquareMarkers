@@ -21,7 +21,14 @@ public final class MarkersConfig {
           feedback:
             messages: true
             sound: true
+            # Legacy migration fallback; use area-on-enter/area-on-leave after migration.
             area-enter: true
+            # Options: None, ActionBar, Title, Subtitle.
+            area-on-enter: ActionBar
+            # Options: None, ActionBar, Title, Subtitle.
+            area-on-leave: ActionBar
+            # Persistent area name: None, ActionBar, BossBar.
+            area-presence: None
         marker-settings:
           players:
             nether-to-overworld: true
@@ -35,6 +42,8 @@ public final class MarkersConfig {
           nether-portals:
             enabled: true
             rename: true
+            # Unnamed portals remain stored and become visible when renamed.
+            only-show-named: false
             always-show-name: true
             priority: 50
           beacons:
@@ -91,6 +100,9 @@ public final class MarkersConfig {
     public static boolean FEEDBACK_MESSAGES_ENABLED = true;
     public static boolean FEEDBACK_SOUNDS_ENABLED = true;
     public static boolean FEEDBACK_AREA_ENTER_ENABLED = true;
+    public static AreaFeedbackConfig.Transition AREA_ON_ENTER = AreaFeedbackConfig.Transition.ACTIONBAR;
+    public static AreaFeedbackConfig.Transition AREA_ON_LEAVE = AreaFeedbackConfig.Transition.ACTIONBAR;
+    public static AreaFeedbackConfig.Presence AREA_PRESENCE = AreaFeedbackConfig.Presence.NONE;
     public static boolean PLAYERS_NETHER_IN_OVERWORLD = true;
     public static boolean PLAYERS_OVERWORLD_IN_NETHER = true;
     public static boolean AREA_MARKERS_ENABLED = true;
@@ -100,6 +112,7 @@ public final class MarkersConfig {
     public static int AREA_MARKERS_MAX_SIZE = 512;
     public static boolean NETHER_PORTAL_MARKERS_ENABLED = true;
     public static boolean NETHER_PORTAL_MARKERS_RENAME = true;
+    public static boolean NETHER_PORTAL_MARKERS_ONLY_SHOW_NAMED = false;
     public static boolean NETHER_PORTAL_MARKERS_ALWAYS_SHOW_NAME = true;
     public static int NETHER_PORTAL_MARKERS_PRIORITY = 50;
     public static boolean BEACON_MARKERS_ENABLED = true;
@@ -132,7 +145,7 @@ public final class MarkersConfig {
             }
             String config = Files.readString(path, StandardCharsets.UTF_8);
             parse(config.lines().toList()); // Reject ambiguous input before modifying the file.
-            String migrated = FeedbackMessages.addMissingOptions(WarpConfigMigration.addMissingOptions(config));
+            String migrated = FeedbackMessages.addMissingOptions(AreaFeedbackConfig.migrate(WarpConfigMigration.addMissingOptions(config)));
             Map<String, String> parsed = parse(migrated.lines().toList());
             if (!migrated.equals(config)) {
                 writeMigratedConfig(path, migrated);
@@ -142,6 +155,12 @@ public final class MarkersConfig {
             FEEDBACK_MESSAGES_ENABLED = getBoolean("settings.feedback.messages", true);
             FEEDBACK_SOUNDS_ENABLED = getBoolean("settings.feedback.sound", true);
             FEEDBACK_AREA_ENTER_ENABLED = getBoolean("settings.feedback.area-enter", true);
+            AREA_ON_ENTER = AreaFeedbackConfig.parse(values.get("settings.feedback.area-on-enter"),
+                AreaFeedbackConfig.Transition.class, AreaFeedbackConfig.Transition.ACTIONBAR, "settings.feedback.area-on-enter");
+            AREA_ON_LEAVE = AreaFeedbackConfig.parse(values.get("settings.feedback.area-on-leave"),
+                AreaFeedbackConfig.Transition.class, AreaFeedbackConfig.Transition.ACTIONBAR, "settings.feedback.area-on-leave");
+            AREA_PRESENCE = AreaFeedbackConfig.parse(values.get("settings.feedback.area-presence"),
+                AreaFeedbackConfig.Presence.class, AreaFeedbackConfig.Presence.NONE, "settings.feedback.area-presence");
             PLAYERS_NETHER_IN_OVERWORLD = getBoolean("marker-settings.players.nether-to-overworld", true);
             PLAYERS_OVERWORLD_IN_NETHER = getBoolean("marker-settings.players.overworld-to-nether", true);
             AREA_MARKERS_ENABLED = getBoolean("marker-settings.areas.enabled", true);
@@ -151,6 +170,7 @@ public final class MarkersConfig {
             AREA_MARKERS_MAX_SIZE = getInt("marker-settings.areas.size", 512, 1, 30_000_000);
             NETHER_PORTAL_MARKERS_ENABLED = getBoolean("marker-settings.nether-portals.enabled", true);
             NETHER_PORTAL_MARKERS_RENAME = getBoolean("marker-settings.nether-portals.rename", true);
+            NETHER_PORTAL_MARKERS_ONLY_SHOW_NAMED = getBoolean("marker-settings.nether-portals.only-show-named", false);
             NETHER_PORTAL_MARKERS_ALWAYS_SHOW_NAME = getBoolean("marker-settings.nether-portals.always-show-name", true);
             NETHER_PORTAL_MARKERS_PRIORITY = getInt("marker-settings.nether-portals.priority", 50);
             BEACON_MARKERS_ENABLED = getBoolean("marker-settings.beacons.enabled", true);

@@ -90,6 +90,32 @@ class MarkerLayerRegressionTest {
     }
 
     @Test
+    void presenceOnlyAreasKeepBoundariesAndInvalidateStationaryChecksWhenEdited() {
+        var enter = net.squaremarkers.core.MarkersConfig.AREA_ON_ENTER;
+        var leave = net.squaremarkers.core.MarkersConfig.AREA_ON_LEAVE;
+        var presence = net.squaremarkers.core.MarkersConfig.AREA_PRESENCE;
+        try {
+            net.squaremarkers.core.MarkersConfig.AREA_ON_ENTER = net.squaremarkers.core.AreaFeedbackConfig.Transition.NONE;
+            net.squaremarkers.core.MarkersConfig.AREA_ON_LEAVE = net.squaremarkers.core.AreaFeedbackConfig.Transition.NONE;
+            net.squaremarkers.core.MarkersConfig.AREA_PRESENCE = net.squaremarkers.core.AreaFeedbackConfig.Presence.BOSSBAR;
+            SquareMarkersCore.onInitialize(new JsonStorage(directory.toString()), null, () -> {});
+            var layer = new AreaMarkerLayer(world());
+            layer.addPoint("Home", 123, 0, 65, 0);
+            layer.addPoint("Home", 123, 10, 65, 0);
+            assertEquals("Home", layer.getContaining(5, 0).orElseThrow().areaMarker().getName());
+            long revision = layer.revision();
+            layer.removePointAt(0, 65, 0);
+            layer.removePointAt(10, 65, 0);
+            assertTrue(layer.revision() > revision);
+            assertTrue(layer.getContaining(5, 0).isEmpty());
+        } finally {
+            net.squaremarkers.core.MarkersConfig.AREA_ON_ENTER = enter;
+            net.squaremarkers.core.MarkersConfig.AREA_ON_LEAVE = leave;
+            net.squaremarkers.core.MarkersConfig.AREA_PRESENCE = presence;
+        }
+    }
+
+    @Test
     void coordinateRemovalClearsStoredAreaWithoutBannerMetadata() {
         JsonStorage storage = new JsonStorage(directory.toString());
         SquareMarkersCore.onInitialize(storage, null, () -> {});

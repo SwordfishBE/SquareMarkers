@@ -31,8 +31,12 @@ final class WarpConfigMigration {
     }
 
     private static String addOptionComment(String config, String section, String key, String comment, String newline) {
+        return addOptionComment(config, "marker-settings", section, key, comment, newline);
+    }
+
+    static String addOptionComment(String config, String root, String section, String key, String comment, String newline) {
         List<Line> lines = lines(config);
-        int parent = findHeader(lines, 0, lines.size(), 0, "marker-settings");
+        int parent = findHeader(lines, 0, lines.size(), 0, root);
         if (parent < 0) return config;
         int parentEnd = nextSection(lines, parent + 1, 0);
         int childIndent = contentIndent(lines, parent + 1, parentEnd, 2);

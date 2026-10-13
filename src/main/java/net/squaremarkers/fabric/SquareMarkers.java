@@ -27,6 +27,8 @@ import net.squaremarkers.fabric.util.ModrinthUpdateChecker;
 import net.squaremarkers.core.DeathMarkers;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.minecraft.server.level.ServerPlayer;
+import net.squaremarkers.fabric.helpers.AreaFeedbackHandler;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,6 +94,7 @@ public class SquareMarkers implements DedicatedServerModInitializer {
             }
         });
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
+			AreaFeedbackHandler.clear();
 			ticks = 0;
 			SquareMarkersCore.server(server);
 			SquareMarkersCore.onStarted();
@@ -102,6 +105,7 @@ public class SquareMarkers implements DedicatedServerModInitializer {
             }
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(unused -> {
+			AreaFeedbackHandler.clear();
 			if (HuskHomesWarpHandler.installed()) {
 				HuskHomesWarpHandler.reset();
 			}
@@ -123,6 +127,7 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			SquareMarkersCore.squaremapHandler().unregisterWorld(level.dimension().identifier().toString())
 		);
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
+			AreaFeedbackHandler.tick(server);
             if (isOpacEnabled()) OpacHandler.flushPending();
 			if (WaystonesHandler.installed()) {
 				WaystonesHandler.flushPending(server);
@@ -147,6 +152,7 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 				.then(Commands.literal("reload").executes(context -> reload(context.getSource())))
 		));
 		var portalInteractions = new UseItemOnListener();
+		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> AreaFeedbackHandler.remove(handler.player.getUUID()));
 		BlockEvents.USE_ITEM_ON.register(portalInteractions);
 		BlockEvents.USE_WITHOUT_ITEM.register(portalInteractions);
 		String version = FabricLoader.getInstance().getModContainer("squaremarkers")

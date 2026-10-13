@@ -3,7 +3,6 @@ package net.squaremarkers.fabric.helpers;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
 import net.minecraft.network.protocol.game.ClientboundSoundEntityPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvent;
@@ -50,9 +49,7 @@ public class FeedbackHelper {
 
 	public static void sendOverlayMessage(ServerPlayer player, String message, int color) {
 		if (message == null || message.isEmpty()) return;
-		player.sendOverlayMessage(
-				Component.nullToEmpty(message).toFlatList(Style.EMPTY.withColor(color)).getFirst()
-		);
+		player.sendOverlayMessage(Component.literal(message).withColor(color));
 	}
 
 	private static void playDirectSound(ServerPlayer player, SoundEvent soundEvent) {

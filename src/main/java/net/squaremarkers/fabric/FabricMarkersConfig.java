@@ -22,6 +22,7 @@ public final class FabricMarkersConfig {
     }
 
     public static void reload() {
+        net.squaremarkers.fabric.helpers.AreaFeedbackHandler.clear();
         MarkersConfig.reload();
         OPAC_MARKERS_ENABLED = MarkersConfig.getBoolean("marker-settings.open-parties-and-claims.enabled", true);
         OPAC_MARKERS_PRIORITY = MarkersConfig.getInt("marker-settings.open-parties-and-claims.priority", 40);

@@ -15,6 +15,30 @@ import org.jspecify.annotations.Nullable;
 import xyz.jpenilla.squaremap.api.MapWorld;
 
 public class NetherPortalMarkerLayer extends SimpleMarkerLayer {
+    private final java.util.Set<String> unnamedMarkers = new java.util.HashSet<>();
+
+    @Override public void load() { unnamedMarkers.clear(); super.load(); }
+    @Override public void close() { unnamedMarkers.clear(); super.close(); }
+
+    @Override public net.squaremarkers.core.markers.MarkerBuilder<?> createBuilder(ISimpleMarker marker) {
+        if (marker.getName() == null || marker.getName().isBlank()) unnamedMarkers.add(marker.getKey());
+        else unnamedMarkers.remove(marker.getKey());
+        return super.createBuilder(marker);
+    }
+
+    @Override protected boolean additionallyHidden(String identity) {
+        return MarkersConfig.NETHER_PORTAL_MARKERS_ONLY_SHOW_NAMED && unnamedMarkers.contains(identity);
+    }
+
+    @Override public InteractionResult remove(int x, int y, int z) {
+        unnamedMarkers.remove(toMarkerKey(x, y, z));
+        return super.remove(x, y, z);
+    }
+
+    @Override public void removeMarker(ISimpleMarker marker) {
+        unnamedMarkers.remove(marker.getKey());
+        super.removeMarker(marker);
+    }
 
     public NetherPortalMarkerLayer(@NotNull MapWorld world) {
         super(Icons.Keys.NETHER_PORTAL, Layers.Keys.NETHER_PORTALS, Layers.Labels.NETHER_PORTALS, Layers.Tooltips.NETHER_PORTALS, world, MarkersConfig.NETHER_PORTAL_MARKERS_PRIORITY);

@@ -12,8 +12,8 @@ It is a Fabric-only port of [Pl3xMarkers](https://modrinth.com/plugin/pl3xmarker
 
 ## ✨ Features
 
-- Player-created area markers
-- Nether portal markers
+- Player-created area markers with configurable entry/exit and persistent in-game names
+- Nether portal markers, optionally showing only named portals
 - End portal markers
 - End gateway markers
 - Lightning strike markers with a configurable lifetime
@@ -41,6 +41,26 @@ Points may be added or removed later. Two aligned points create a circle; two no
 
 Basic HTML is accepted in area names: `b`, `i`, `u`, `br`, and a `span` with a hexadecimal text color.
 
+Configure in-game area feedback independently for entering, leaving and staying
+inside a player-created area:
+
+```yaml
+settings:
+  feedback:
+    area-on-enter: ActionBar # None, ActionBar, Title, Subtitle
+    area-on-leave: ActionBar # None, ActionBar, Title, Subtitle
+    area-presence: None      # None, ActionBar, BossBar
+```
+
+Persistent actionbars refresh once every two seconds, including while stationary.
+A bossbar is reused while inside the area and removed when leaving, disconnecting,
+changing dimension, dying, entering spectator mode, or reloading the configuration.
+These options apply to player-created areas, not OPAC claims. All area messages
+respect `settings.feedback.messages`; presence text uses `messages.area.presence`
+(default: `"{name}"`). `marker-settings.areas.always-show-name` controls the web-map
+label only. Existing `area-enter: false` settings migrate to `None` for both
+transitions. After migration, use the new `area-on-enter` and `area-on-leave` options.
+
 ---
 
 ## 🔨 Other automatic markers
@@ -51,6 +71,11 @@ Basic HTML is accepted in area names: `b`, `i`, `u`, `br`, and a `span` with a h
 - Place and edit a sign directly above a lodestone to register it.
 - End portals, end gateways, and lightning strikes are detected automatically.
 
+Set `marker-settings.nether-portals.only-show-named: true` to hide unnamed Nether
+portals from the web map. They remain registered and stored; renaming one makes
+it visible. This defaults to `false`. Renaming does not override manual hiding;
+the marker `show` command does not override the named-only filter.
+
 ---
 
 ## ⚙️ Configuration and commands
@@ -58,7 +83,7 @@ Basic HTML is accepted in area names: `b`, `i`, `u`, `br`, and a `span` with a h
 ### Configurable feedback messages
 
 Player feedback can be customized under the root `messages` section in
-`config/squaremarkers/config.yml`. The 18 player-feedback templates and 6 map-text templates have English defaults.
+`config/squaremarkers/config.yml`. The 19 player-feedback templates and 6 map-text templates have English defaults.
 Existing configuration files receive missing templates without replacing custom
 values or other settings. Run `/squaremarkers reload` to apply edits.
 
@@ -80,6 +105,7 @@ messages:
     point-remove: "Removed point from area: {label}"
     enter: "[+] {name}"
     leave: "[-] {name}"
+    presence: "{name}"
   sign:
     invalid-text: "Text should be a String array with a size of 4"
     add: "Added sign marker"
@@ -101,8 +127,8 @@ and `{label}` is the area label for point operations. For example, set
 colors continue to follow the existing feedback/area colors. Quote your text,
 especially when it contains `:` or `#`. Use `""` to suppress one message;
 feedback sounds still follow `settings.feedback.sound`. The existing
-`settings.feedback.messages` and `settings.feedback.area-enter` toggles keep
-their current behavior. These templates do not change console logging.
+`settings.feedback.messages` toggle still controls in-game messages. Area
+transition and presence modes are described above. These templates do not change console logging.
 
 The `death` and `portal` templates affect the web map, independently of in-game
 feedback toggles. Death titles use `{name}` for the player's name; position uses

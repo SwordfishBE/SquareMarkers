@@ -122,12 +122,19 @@ final class MarkerCommands {
         }
         if (layer != null) layer.refreshVisibility(id);
         if (!hidden && layer != null && layer.isHidden(id)) {
-            message(context.getSource(), "Individual exclusion cleared, but this marker remains hidden by an owner-level exclusion. Show that owner entry first.");
+            message(context.getSource(), remainingHiddenMessage(layer));
             return 1;
         }
         message(context.getSource(), "Marker " + (hidden ? "hidden from" : "shown on") + " squaremap: " + id
             + ". The web map updates on squaremap's next update.");
         return 1;
+    }
+
+    static String remainingHiddenMessage(MarkerLayer<?> layer) {
+        if (layer instanceof net.squaremarkers.core.layers.NetherPortalMarkerLayer) {
+            return "Individual exclusion cleared, but this unnamed portal remains hidden by only-show-named. Rename the portal or disable marker-settings.nether-portals.only-show-named.";
+        }
+        return "Individual exclusion cleared, but this marker remains hidden by an owner-level exclusion. Show that owner entry first.";
     }
 
     private static int status(CommandSourceStack source, boolean detailed) {
