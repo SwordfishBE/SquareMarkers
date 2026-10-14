@@ -68,7 +68,7 @@ All area messages respect `settings.feedback.messages`; presence text uses `mess
 - End portals, end gateways, and lightning strikes are detected automatically.
 - Rename a Nether portal, End portals or End gateways by right-clicking its portal blocks with a named name tag in either hand. Right-clicking a named portal displays its name in the action bar, including with an empty hand.
 
-Set `marker-settings.nether-portals.only-show-named: true` to hide unnamed Nether portals from the web map.
+Set `only-show-named: true` to hide unnamed Nether portal, End portal and End gateway from the web map.
 They remain registered and stored; renaming one makes it visible.
 Renaming does not override manual hiding; the marker `show` command does not override the named-only filter.
 
