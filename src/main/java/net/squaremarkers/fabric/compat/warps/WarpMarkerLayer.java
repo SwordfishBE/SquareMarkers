@@ -1,18 +1,15 @@
 package net.squaremarkers.fabric.compat.warps;
 
 import net.squaremarkers.core.helpers.HtmlHelper;
-import net.squaremarkers.core.layers.primitive.MarkerLayer;
+import net.squaremarkers.core.layers.primitive.SnapshotMarkerLayer;
 import net.squaremarkers.core.markers.IconMarkerBuilder;
 import net.squaremarkers.core.markers.MarkerBuilder;
 import net.squaremarkers.core.registries.Icons;
 import xyz.jpenilla.squaremap.api.MapWorld;
 
-import java.util.HashMap;
-import java.util.Map;
 
-public final class WarpMarkerLayer extends MarkerLayer<WarpPoint> {
+public final class WarpMarkerLayer extends SnapshotMarkerLayer<String, WarpPoint> {
     private final WarpHandler.Source source;
-    private final Map<String, WarpPoint> rendered = new HashMap<>();
 
     public WarpMarkerLayer(MapWorld world, WarpHandler.Source source) {
         super(source.layerKey(), source.label() + " Warps", world, source.priority());
@@ -24,22 +21,7 @@ public final class WarpMarkerLayer extends MarkerLayer<WarpPoint> {
         sync(WarpHandler.current(source));
     }
 
-    public void sync(Map<String, WarpPoint> warps) {
-        rendered.keySet().removeIf(name -> {
-            WarpPoint point = warps.get(name);
-            if (point != null && point.dimension().equals(worldIdentifier)) {
-                return false;
-            }
-            removeMarker(name);
-            return true;
-        });
-        warps.forEach((name, point) -> {
-            if (point.dimension().equals(worldIdentifier) && !point.equals(rendered.get(name))) {
-                loadMarker(point);
-                rendered.put(name, point);
-            }
-        });
-    }
+    protected String dimension(WarpPoint point) { return point.dimension(); }
 
     @Override
     public MarkerBuilder<?> createBuilder(WarpPoint point) {

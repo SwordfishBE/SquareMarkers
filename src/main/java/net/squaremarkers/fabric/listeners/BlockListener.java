@@ -11,6 +11,8 @@ import net.minecraft.world.level.block.entity.BannerBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.squaremarkers.core.SquareMarkersCore;
 import net.squaremarkers.core.layers.BeaconMarkerLayer;
+import net.squaremarkers.core.layers.EndGatewayMarkerLayer;
+import net.squaremarkers.core.layers.EndPortalMarkerLayer;
 import net.squaremarkers.core.layers.NetherPortalMarkerLayer;
 import net.squaremarkers.core.layers.SignsMarkerLayer;
 import net.squaremarkers.core.layers.primitive.AreaMarkerLayer;
@@ -74,6 +76,16 @@ public abstract class BlockListener {
 	@Nullable
 	public static InteractionResult onChange(@NonNull Level level, @NonNull BlockPos pos, @NonNull BlockState state,
 	                                         @NonNull BlockState newState, @Nullable BlockPos portalCenter) {
+		if (broke(Blocks.END_GATEWAY, state, newState)) {
+			var layer = SquareMarkersCore.squaremapHandler().getLayer(level.dimension().identifier().toString(),
+				EndGatewayMarkerLayer.class, Layers.Keys.END_GATEWAYS);
+			return layer == null ? null : layer.remove(pos.getX(), pos.getY(), pos.getZ());
+		}
+		if (broke(Blocks.END_PORTAL, state, newState)) {
+			var layer = SquareMarkersCore.squaremapHandler().getLayer(level.dimension().identifier().toString(),
+				EndPortalMarkerLayer.class, Layers.Keys.END_PORTALS);
+			return layer == null ? null : layer.removeContainingBlock(pos.getX(), pos.getY(), pos.getZ());
+		}
 		// beacon
 		if (broke(Blocks.BEACON, state, newState)) {
 			var markerLayer = SquareMarkersCore.api()

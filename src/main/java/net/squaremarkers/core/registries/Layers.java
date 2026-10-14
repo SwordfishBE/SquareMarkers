@@ -78,6 +78,7 @@ public class Layers {
 		public static String ESSENTIAL_COMMANDS_WARPS = "essential_commands_warps";
 		public static String HUSKHOMES_WARPS = "huskhomes_warps";
 		public static String WAYSTONES = "waystones";
+		public static final String WORLD_BORDER = "world_border";
 		public static String SIGNS = "signs";
 		public static String LIGHTNING = "lightning";
 		public static String NETHER_PLAYERS = "nether_players";

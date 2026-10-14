@@ -4,6 +4,7 @@ import net.fabricmc.api.DedicatedServerModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLevelEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.player.BlockEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -28,6 +29,9 @@ import net.squaremarkers.core.DeathMarkers;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.minecraft.server.level.ServerPlayer;
 import net.squaremarkers.fabric.helpers.AreaFeedbackHandler;
+import net.squaremarkers.fabric.helpers.GatewayHelper;
+import net.squaremarkers.fabric.compat.worldborder.WorldBorderHandler;
+import net.squaremarkers.fabric.compat.worldborder.WorldBorderMarkerLayer;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +69,10 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			Layers.register(WaystoneMarkerLayer::new, unused -> WaystonesHandler.enabled());
 		}
 		// initialize core
+		if (WorldBorderHandler.installed()) {
+			Layers.register(WorldBorderMarkerLayer::new, world -> WorldBorderHandler.enabled()
+				&& WorldBorderHandler.supports(world.identifier().asString()));
+		}
 	    storage = new JsonStorage("config/squaremarkers");
 	    SquareMarkersCore.onInitialize(storage, new ILogger() {
 		    @Override
@@ -100,6 +108,8 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			SquareMarkersCore.onStarted();
         });
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            GatewayHelper.refreshLoaded(server);
+            WorldBorderHandler.refresh();
             if (HuskHomesWarpHandler.installed()) {
                 HuskHomesWarpHandler.start(server);
             }
@@ -110,6 +120,7 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 				HuskHomesWarpHandler.reset();
 			}
 			WarpHandler.reset();
+			WorldBorderHandler.reset();
 			if (WaystonesHandler.installed()) {
 				WaystonesHandler.reset();
 			}
@@ -136,6 +147,9 @@ public class SquareMarkers implements DedicatedServerModInitializer {
                 DeathMarkers.tick();
 				SquareMarkersCore.squaremapHandler().updateDynamicLayers();
 				WarpHandler.refresh();
+				if (WorldBorderHandler.enabled() && ticks % (20 * FabricMarkersConfig.WORLD_BORDER_REFRESH_INTERVAL) == 0) {
+					WorldBorderHandler.refresh();
+				}
 				if (isOpacEnabled()) {
 					OpacHandler.tickMetadata(server);
 				}
@@ -152,6 +166,7 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 				.then(Commands.literal("reload").executes(context -> reload(context.getSource())))
 		));
 		var portalInteractions = new UseItemOnListener();
+		ServerChunkEvents.CHUNK_LOAD.register((level, chunk, newChunk) -> GatewayHelper.onChunkLoad(level, chunk));
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> AreaFeedbackHandler.remove(handler.player.getUUID()));
 		BlockEvents.USE_ITEM_ON.register(portalInteractions);
 		BlockEvents.USE_WITHOUT_ITEM.register(portalInteractions);
@@ -173,6 +188,8 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			return 0;
 		}
 		SquareMarkersCore.reloadMarkers();
+		GatewayHelper.refreshLoaded(SquareMarkersCore.server());
+		WorldBorderHandler.refresh();
 		if (HuskHomesWarpHandler.installed()) {
 			HuskHomesWarpHandler.reload();
 		}

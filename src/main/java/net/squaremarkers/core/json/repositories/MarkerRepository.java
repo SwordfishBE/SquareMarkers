@@ -12,6 +12,7 @@ import net.squaremarkers.core.json.entities.AreaMarker;
 import net.squaremarkers.core.json.entities.SignMarker;
 import net.squaremarkers.core.interfaces.entities.IPoint;
 import net.squaremarkers.core.json.entities.Point;
+import net.squaremarkers.core.json.entities.SimpleMarker;
 import net.squaremarkers.core.json.serializers.PointSerializer;
 
 import java.io.IOException;
@@ -151,6 +152,9 @@ public abstract class MarkerRepository<T extends Marker> implements IMarkerRepos
 		}
 		if (marker instanceof PointMarker point) {
 			validatePoint(point.getPosition());
+		}
+		if (marker instanceof SimpleMarker simple && simple.getGatewayDestination() != null) {
+			validatePoint(simple.getGatewayDestination());
 		}
 		if (marker instanceof SignMarker sign) {
 			String[] text = sign.getText();

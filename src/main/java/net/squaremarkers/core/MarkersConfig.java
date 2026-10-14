@@ -19,87 +19,136 @@ public final class MarkersConfig {
         # SquareMarkers configuration
         settings:
           feedback:
+            # Show in-game feedback messages for marker interactions and area notifications.
             messages: true
+            # Play sounds for marker interactions.
             sound: true
-            # Legacy migration fallback; use area-on-enter/area-on-leave after migration.
-            area-enter: true
+            # Show area feedback when entering an area.
             # Options: None, ActionBar, Title, Subtitle.
             area-on-enter: ActionBar
+            # Show area feedback when leaving an area.
             # Options: None, ActionBar, Title, Subtitle.
             area-on-leave: ActionBar
             # Persistent area name: None, ActionBar, BossBar.
             area-presence: None
         marker-settings:
           players:
+            # Show Nether players at their scaled positions on the Overworld map.
             nether-to-overworld: true
+            # Show Overworld players at their scaled positions on the Nether map.
             overworld-to-nether: true
           areas:
+            # Show player-created areas defined by named banners on lodestones.
             enabled: true
+            # Layer order in the map menu and overlays; higher values are placed above lower values.
             priority: 50
-            always-show-name: true
+            # Display area details on mouse hover (Hover) or in a click popup (Click).
+            label-mode: Hover
+            # Include the area size in the map label or popup.
             show-area-size: false
+            # Area size limit in blocks; distant points are excluded when building the boundary.
             size: 512
           nether-portals:
+            # Show Nether portal markers in Overworld-like and Nether-like dimensions.
             enabled: true
+            # Right-click a portal block with a named name tag to rename it.
             rename: true
             # Unnamed portals remain stored and become visible when renamed.
             only-show-named: false
-            always-show-name: true
+            # Layer order in the map menu and overlays; higher values are placed above lower values.
             priority: 50
           beacons:
+            # Show active beacon markers; inactive or removed beacons are hidden.
             enabled: true
+            # Layer order in the map menu and overlays; higher values are placed above lower values.
             priority: 50
           end-portals:
+            # End portal markers in overworld-like dimensions; not the End exit portal.
             enabled: true
+            # Right-click an active portal block or its frame with a named name tag to rename it.
+            rename: true
+            # Unnamed portals remain stored; renaming reveals them unless manually hidden.
+            only-show-named: false
+            # Layer order in the map menu and overlays; higher values are placed above lower values.
             priority: 50
           end-gateways:
+            # End gateway markers in End-like dimensions; map links appear once the destination is known.
             enabled: true
+            # Right-click the gateway block with a named name tag to rename it.
+            rename: true
+            # Unnamed gateways remain stored; renaming reveals them unless manually hidden.
+            only-show-named: false
+            # Layer order in the map menu and overlays; higher values are placed above lower values.
             priority: 50
           signs:
+            # Show sign markers from standing signs placed on lodestones.
             enabled: true
+            # Layer order in the map menu and overlays; higher values are placed above lower values.
             priority: 50
-            always-show-text: true
+            # Preserve empty sign lines; false removes blank lines from the displayed text.
             fill-lines: false
           lightning:
+            # Show temporary lightning-strike markers in Overworld-like dimensions.
             enabled: true
+            # Layer order in the map menu and overlays; higher values are placed above lower values.
             priority: 50
             # Marker lifetime in seconds.
             lifetime: 3
           deaths:
             # Death locations are public on squaremap. Opt in explicitly.
             enabled: false
+            # Layer order in the map menu and overlays; higher values are placed above lower values.
             priority: 50
             # Marker lifetime in seconds.
             lifetime: 1800
             # UTC, Europe/Brussels, Europe/London, or a fixed offset such as UTC+01:00.
             timezone: UTC
           open-parties-and-claims:
+            # Show claims and subclaims when Open Parties and Claims is installed.
             enabled: true
+            # Layer order in the map menu and overlays; higher values are placed above lower values.
             priority: 40
-            always-show-name: true
+            # Display claim names on mouse hover (Hover) or in a click popup (Click).
+            label-mode: Hover
             # Check in-memory claim names/colors every this many seconds.
             metadata-refresh-interval: 30
           fabric-essentials-warps:
+            # Show warp points when Fabric Essentials is installed; absent/disabled support does not poll.
             enabled: true
+            # Layer order in the map menu and overlays; higher values are placed above lower values.
             priority: 50
           essential-commands-warps:
+            # Show warp points when Essential Commands is installed; absent/disabled support does not poll.
             enabled: true
+            # Layer order in the map menu and overlays; higher values are placed above lower values.
             priority: 50
           huskhomes-warps:
+            # Show this server's HuskHomes warps; cross-server warps are excluded.
             enabled: true
+            # Layer order in the map menu and overlays; higher values are placed above lower values.
             priority: 50
           waystones:
+            # Show Waystones markers when the Waystones mod is installed.
             enabled: true
+            # Layer order in the map menu and overlays; higher values are placed above lower values.
             priority: 50
+            # Include sharestones as well as regular waystones.
             include-sharestones: true
+            # Include unnamed waystones; locations become visible on the public map.
             include-undiscovered: false
+          world-border:
+            # Optional Serilum World Border mod; displays its enabled vanilla-dimension boundaries.
+            enabled: true
+            # Layer order in the map menu and overlays; higher values are placed above lower values.
+            priority: 50
+            # Check loaded config values in memory, in seconds; no chunk or file scans. Range: 5-3600.
+            refresh-interval: 30
         """ + FeedbackMessages.defaultsYaml();
 
     private static Map<String, String> values = Map.of();
 
     public static boolean FEEDBACK_MESSAGES_ENABLED = true;
     public static boolean FEEDBACK_SOUNDS_ENABLED = true;
-    public static boolean FEEDBACK_AREA_ENTER_ENABLED = true;
     public static AreaFeedbackConfig.Transition AREA_ON_ENTER = AreaFeedbackConfig.Transition.ACTIONBAR;
     public static AreaFeedbackConfig.Transition AREA_ON_LEAVE = AreaFeedbackConfig.Transition.ACTIONBAR;
     public static AreaFeedbackConfig.Presence AREA_PRESENCE = AreaFeedbackConfig.Presence.NONE;
@@ -107,23 +156,26 @@ public final class MarkersConfig {
     public static boolean PLAYERS_OVERWORLD_IN_NETHER = true;
     public static boolean AREA_MARKERS_ENABLED = true;
     public static int AREA_MARKERS_PRIORITY = 50;
-    public static boolean AREA_MARKERS_MARKERS_ALWAYS_SHOW_NAME = true;
+    public enum LabelMode { HOVER, CLICK }
+    public static LabelMode AREA_MARKERS_LABEL_MODE = LabelMode.HOVER;
     public static boolean AREA_MARKERS_SHOW_SIZE = false;
     public static int AREA_MARKERS_MAX_SIZE = 512;
     public static boolean NETHER_PORTAL_MARKERS_ENABLED = true;
     public static boolean NETHER_PORTAL_MARKERS_RENAME = true;
     public static boolean NETHER_PORTAL_MARKERS_ONLY_SHOW_NAMED = false;
-    public static boolean NETHER_PORTAL_MARKERS_ALWAYS_SHOW_NAME = true;
     public static int NETHER_PORTAL_MARKERS_PRIORITY = 50;
     public static boolean BEACON_MARKERS_ENABLED = true;
     public static int BEACON_MARKERS_PRIORITY = 50;
     public static boolean END_PORTAL_MARKERS_ENABLED = true;
+    public static boolean END_PORTAL_MARKERS_RENAME = true;
+    public static boolean END_PORTAL_MARKERS_ONLY_SHOW_NAMED = false;
     public static int END_PORTAL_MARKERS_PRIORITY = 50;
     public static boolean END_GATEWAY_MARKERS_ENABLED = true;
+    public static boolean END_GATEWAY_MARKERS_RENAME = true;
+    public static boolean END_GATEWAY_MARKERS_ONLY_SHOW_NAMED = false;
     public static int END_GATEWAY_MARKERS_PRIORITY = 50;
     public static boolean SIGN_MARKERS_ENABLED = true;
     public static int SIGN_MARKERS_PRIORITY = 50;
-    public static boolean SIGN_MARKERS_ALWAYS_SHOW_TEXT = true;
     public static boolean SIGN_MARKERS_FILL_LINES = false;
     public static boolean LIGHTNING_MARKERS_ENABLED = true;
     public static int LIGHTNING_MARKERS_PRIORITY = 50;
@@ -136,6 +188,8 @@ public final class MarkersConfig {
     private MarkersConfig() {
     }
 
+    static String defaultConfig() { return DEFAULT_CONFIG; }
+
     public static synchronized void reload() {
         Path path = SquareMarkersCore.getMainDir().resolve("config.yml");
         try {
@@ -144,8 +198,7 @@ public final class MarkersConfig {
                 Files.writeString(path, DEFAULT_CONFIG, StandardCharsets.UTF_8);
             }
             String config = Files.readString(path, StandardCharsets.UTF_8);
-            parse(config.lines().toList()); // Reject ambiguous input before modifying the file.
-            String migrated = FeedbackMessages.addMissingOptions(AreaFeedbackConfig.migrate(WarpConfigMigration.addMissingOptions(config)));
+            String migrated = ConfigMigration.migrate(config); // Validates original input before upgrading.
             Map<String, String> parsed = parse(migrated.lines().toList());
             if (!migrated.equals(config)) {
                 writeMigratedConfig(path, migrated);
@@ -154,7 +207,6 @@ public final class MarkersConfig {
             FeedbackMessages.reload(parsed);
             FEEDBACK_MESSAGES_ENABLED = getBoolean("settings.feedback.messages", true);
             FEEDBACK_SOUNDS_ENABLED = getBoolean("settings.feedback.sound", true);
-            FEEDBACK_AREA_ENTER_ENABLED = getBoolean("settings.feedback.area-enter", true);
             AREA_ON_ENTER = AreaFeedbackConfig.parse(values.get("settings.feedback.area-on-enter"),
                 AreaFeedbackConfig.Transition.class, AreaFeedbackConfig.Transition.ACTIONBAR, "settings.feedback.area-on-enter");
             AREA_ON_LEAVE = AreaFeedbackConfig.parse(values.get("settings.feedback.area-on-leave"),
@@ -165,23 +217,25 @@ public final class MarkersConfig {
             PLAYERS_OVERWORLD_IN_NETHER = getBoolean("marker-settings.players.overworld-to-nether", true);
             AREA_MARKERS_ENABLED = getBoolean("marker-settings.areas.enabled", true);
             AREA_MARKERS_PRIORITY = getInt("marker-settings.areas.priority", 50);
-            AREA_MARKERS_MARKERS_ALWAYS_SHOW_NAME = getBoolean("marker-settings.areas.always-show-name", true);
+            AREA_MARKERS_LABEL_MODE = getLabelMode("marker-settings.areas.label-mode");
             AREA_MARKERS_SHOW_SIZE = getBoolean("marker-settings.areas.show-area-size", false);
             AREA_MARKERS_MAX_SIZE = getInt("marker-settings.areas.size", 512, 1, 30_000_000);
             NETHER_PORTAL_MARKERS_ENABLED = getBoolean("marker-settings.nether-portals.enabled", true);
             NETHER_PORTAL_MARKERS_RENAME = getBoolean("marker-settings.nether-portals.rename", true);
             NETHER_PORTAL_MARKERS_ONLY_SHOW_NAMED = getBoolean("marker-settings.nether-portals.only-show-named", false);
-            NETHER_PORTAL_MARKERS_ALWAYS_SHOW_NAME = getBoolean("marker-settings.nether-portals.always-show-name", true);
             NETHER_PORTAL_MARKERS_PRIORITY = getInt("marker-settings.nether-portals.priority", 50);
             BEACON_MARKERS_ENABLED = getBoolean("marker-settings.beacons.enabled", true);
             BEACON_MARKERS_PRIORITY = getInt("marker-settings.beacons.priority", 50);
             END_PORTAL_MARKERS_ENABLED = getBoolean("marker-settings.end-portals.enabled", true);
+            END_PORTAL_MARKERS_RENAME = getBoolean("marker-settings.end-portals.rename", true);
+            END_PORTAL_MARKERS_ONLY_SHOW_NAMED = getBoolean("marker-settings.end-portals.only-show-named", false);
             END_PORTAL_MARKERS_PRIORITY = getInt("marker-settings.end-portals.priority", 50);
             END_GATEWAY_MARKERS_ENABLED = getBoolean("marker-settings.end-gateways.enabled", true);
+            END_GATEWAY_MARKERS_RENAME = getBoolean("marker-settings.end-gateways.rename", true);
+            END_GATEWAY_MARKERS_ONLY_SHOW_NAMED = getBoolean("marker-settings.end-gateways.only-show-named", false);
             END_GATEWAY_MARKERS_PRIORITY = getInt("marker-settings.end-gateways.priority", 50);
             SIGN_MARKERS_ENABLED = getBoolean("marker-settings.signs.enabled", true);
             SIGN_MARKERS_PRIORITY = getInt("marker-settings.signs.priority", 50);
-            SIGN_MARKERS_ALWAYS_SHOW_TEXT = getBoolean("marker-settings.signs.always-show-text", true);
             SIGN_MARKERS_FILL_LINES = getBoolean("marker-settings.signs.fill-lines", false);
             LIGHTNING_MARKERS_ENABLED = getBoolean("marker-settings.lightning.enabled", true);
             LIGHTNING_MARKERS_PRIORITY = getInt("marker-settings.lightning.priority", 50);
@@ -222,6 +276,16 @@ public final class MarkersConfig {
         }
         SquareMarkersCore.warn("Invalid boolean for '" + key + "': " + value);
         return fallback;
+    }
+
+    public static LabelMode getLabelMode(String key) {
+        return parseLabelMode(values.getOrDefault(key, "Hover"), key);
+    }
+
+    static LabelMode parseLabelMode(String value, String key) {
+        for (LabelMode mode : LabelMode.values()) if (mode.name().equalsIgnoreCase(value.trim())) return mode;
+        SquareMarkersCore.warn("Invalid label mode for '" + key + "': " + value + "; using Hover (options: Hover, Click)");
+        return LabelMode.HOVER;
     }
 
     static ZoneId parseDeathTimezone(String value) {

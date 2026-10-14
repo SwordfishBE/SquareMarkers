@@ -10,8 +10,34 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.portal.PortalShape;
 import net.squaremarkers.fabric.interfaces.NetherPortalInterface;
 import org.jetbrains.annotations.Nullable;
+import java.util.function.Predicate;
 
 public class PortalHelper {
+
+    @Nullable
+    public static BlockPos getEndPortalCenterFromFrame(Level world, BlockPos pos, BlockState state) {
+        return findActiveEndPortalFromFrame(pos, state.getValue(BlockStateProperties.HORIZONTAL_FACING),
+            block -> world.hasChunkAt(block) && world.getBlockState(block).is(Blocks.END_PORTAL));
+    }
+
+    /** At most three candidate centers and nine portal blocks each; never searches the world. */
+    @Nullable
+    static BlockPos findActiveEndPortalFromFrame(BlockPos frame, Direction inward, Predicate<BlockPos> isPortal) {
+        if (inward.getAxis() == Direction.Axis.Y) return null;
+        BlockPos middle = frame.relative(inward, 2);
+        Direction sideways = inward.getClockWise();
+        for (int offset = -1; offset <= 1; offset++) {
+            BlockPos center = middle.relative(sideways, offset);
+            boolean complete = true;
+            for (int x = -1; x <= 1 && complete; x++) {
+                for (int z = -1; z <= 1; z++) {
+                    if (!isPortal.test(center.offset(x, 0, z))) { complete = false; break; }
+                }
+            }
+            if (complete) return center;
+        }
+        return null;
+    }
 
     @Nullable
     public static BlockPos findAffectedNetherPortalCenter(LevelAccessor level, BlockPos pos, BlockState state) {

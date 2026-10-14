@@ -4,6 +4,8 @@ import org.intellij.lang.annotations.Language;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 public final class HtmlHelper {
     private static final Pattern SAFE_TAG = Pattern.compile(
@@ -21,7 +23,7 @@ public final class HtmlHelper {
                 <button onclick="(function() {
                   const baseUrl = window.location.href.split('?')[0] || window.location.href;
                   const params = new URLSearchParams(window.location.search);
-                  params.set('world', '%s');
+                  params.set('world', decodeURIComponent('%s'));
                   params.set('x', '%d');
                   params.set('z', '%d');
                   window.location.href = baseUrl + '?' + params.toString();
@@ -30,7 +32,8 @@ public final class HtmlHelper {
                 </button>
             </div>
         """;
-        return String.format(html, sanitize(title), destinationKey, relativeX, relativeZ, sanitize(buttonText));
+        return String.format(html, sanitize(title), URLEncoder.encode(destinationKey, StandardCharsets.UTF_8).replace("+", "%20"),
+            relativeX, relativeZ, sanitize(buttonText));
     }
 
     @Language("HTML")

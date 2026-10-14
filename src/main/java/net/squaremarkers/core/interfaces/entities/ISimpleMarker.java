@@ -4,6 +4,13 @@ import org.jspecify.annotations.Nullable;
 
 public interface ISimpleMarker extends IPointMarker {
 
+    /** Optional same-world End gateway target, absent for other marker types. */
+    default @Nullable IPoint getGatewayDestination() { return null; }
+
+    default void setGatewayDestination(@Nullable IPoint destination) {
+        throw new UnsupportedOperationException("Gateway destinations are not supported by this marker");
+    }
+
 	/**
 	 * Get the name of this marker
 	 *

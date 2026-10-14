@@ -20,14 +20,14 @@ class FeedbackMessagesTest {
 
     @Test void migrationAddsAllDefaultsAndIsIdempotent() {
         String input = "settings:\n  feedback:\n    messages: false # keep\n";
-        String updated = FeedbackMessages.addMissingOptions(input);
+        String updated = ConfigMigration.addMessageOptions(input);
         var parsed = MarkersConfig.parse(updated.lines().toList());
         assertEquals("false", parsed.get("settings.feedback.messages"));
-        assertEquals(25, parsed.keySet().stream().filter(key -> key.startsWith("messages.")).count());
+        assertEquals(FeedbackMessages.values().length, parsed.keySet().stream().filter(key -> key.startsWith("messages.")).count());
         for (var message : FeedbackMessages.values()) assertEquals(message.defaultText,
             parsed.get("messages." + message.group + "." + message.key));
         assertTrue(updated.startsWith(input));
-        assertEquals(updated, FeedbackMessages.addMissingOptions(updated));
+        assertEquals(updated, ConfigMigration.addMessageOptions(updated));
         FeedbackMessages.reload(parsed);
         assertEquals("Renamed Portal marker to 'Home'", FeedbackMessages.MARKER_RENAME.text("type", "Portal", "name", "Home"));
     }
@@ -37,14 +37,14 @@ class FeedbackMessagesTest {
             String input = "# Custom\r\nmessages:\r\n" + " ".repeat(indent) + "area:\r\n"
                 + " ".repeat(indent * 2) + "enter: \"Welcome: {name} #1\" # keep\r\n"
                 + " ".repeat(indent * 2) + "leave: \"\"\r\nother:\r\n  enabled: false\r\n";
-            String updated = FeedbackMessages.addMissingOptions(input);
+            String updated = ConfigMigration.addMessageOptions(input);
             var parsed = MarkersConfig.parse(updated.lines().toList());
             assertEquals("Welcome: {name} #1", parsed.get("messages.area.enter"));
             assertEquals("", parsed.get("messages.area.leave"));
             assertEquals("false", parsed.get("other.enabled"));
             assertTrue(updated.contains("# keep\r\n"));
             assertFalse(updated.replace("\r\n", "").contains("\n"));
-            assertEquals(updated, FeedbackMessages.addMissingOptions(updated));
+            assertEquals(updated, ConfigMigration.addMessageOptions(updated));
         }
     }
 

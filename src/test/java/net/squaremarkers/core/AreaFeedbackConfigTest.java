@@ -7,7 +7,7 @@ class AreaFeedbackConfigTest {
     @Test void legacyOptOutAndCustomSettingsSurviveMigration() {
         String input = "# Keep\r\nsettings:\r\n  feedback:\r\n    area-enter: false # disabled\r\n"
             + "    area-on-enter: Subtitle\r\nmarker-settings:\r\n  nether-portals:\r\n    rename: false\r\n";
-        String result = AreaFeedbackConfig.migrate(input);
+        String result = ConfigMigration.addAreaOptions(input);
         var values = MarkersConfig.parse(result.lines().toList());
         assertEquals("Subtitle", values.get("settings.feedback.area-on-enter"));
         assertEquals("None", values.get("settings.feedback.area-on-leave"));
@@ -18,11 +18,11 @@ class AreaFeedbackConfigTest {
         assertTrue(result.contains("# Options: None, ActionBar, Title, Subtitle.\r\n    area-on-enter: Subtitle"));
         assertTrue(result.contains("# Options: None, ActionBar, Title, Subtitle.\r\n    area-on-leave: None"));
         assertFalse(result.replace("\r\n", "").contains("\n"));
-        assertEquals(result, AreaFeedbackConfig.migrate(result));
+        assertEquals(result, ConfigMigration.addAreaOptions(result));
     }
 
     @Test void defaultMigrationKeepsTransitionsAndPreservesExplicitOptIns() {
-        String result = AreaFeedbackConfig.migrate("settings:\n  feedback:\n    area-presence: BossBar\n"
+        String result = ConfigMigration.addAreaOptions("settings:\n  feedback:\n    area-presence: BossBar\n"
             + "marker-settings:\n  nether-portals:\n    only-show-named: true\n");
         var values = MarkersConfig.parse(result.lines().toList());
         assertEquals("ActionBar", values.get("settings.feedback.area-on-enter"));

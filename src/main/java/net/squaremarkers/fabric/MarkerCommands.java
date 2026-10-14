@@ -17,6 +17,7 @@ import net.squaremarkers.core.SquareMarkersCore;
 import net.squaremarkers.core.layers.primitive.MarkerLayer;
 import net.squaremarkers.fabric.compat.warps.WarpHandler;
 import net.squaremarkers.fabric.compat.waystones.WaystonesHandler;
+import net.squaremarkers.fabric.compat.worldborder.WorldBorderHandler;
 
 import java.util.Set;
 import java.util.TreeSet;
@@ -131,8 +132,9 @@ final class MarkerCommands {
     }
 
     static String remainingHiddenMessage(MarkerLayer<?> layer) {
-        if (layer instanceof net.squaremarkers.core.layers.NetherPortalMarkerLayer) {
-            return "Individual exclusion cleared, but this unnamed portal remains hidden by only-show-named. Rename the portal or disable marker-settings.nether-portals.only-show-named.";
+        if (layer instanceof net.squaremarkers.core.layers.primitive.NamedPortalMarkerLayer) {
+            String section = layer.getKey().replace('_', '-');
+            return "Individual exclusion cleared, but this unnamed portal or gateway remains hidden by only-show-named. Rename it or disable marker-settings." + section + ".only-show-named.";
         }
         return "Individual exclusion cleared, but this marker remains hidden by an owner-level exclusion. Show that owner entry first.";
     }
@@ -166,10 +168,12 @@ final class MarkerCommands {
         }
         if (WaystonesHandler.installed()) installed++;
         if (WaystonesHandler.enabled()) enabled++;
+        if (WorldBorderHandler.installed()) installed++;
+        if (WorldBorderHandler.enabled()) enabled++;
         statusMessage(source, colored("Integrations: ", ChatFormatting.GRAY)
             .append(colored(enabled + " enabled", ChatFormatting.GREEN))
             .append(colored(" | ", ChatFormatting.DARK_GRAY)).append(colored((installed - enabled) + " disabled", ChatFormatting.YELLOW))
-            .append(colored(" | " + (WarpHandler.Source.values().length + 2 - installed) + " not installed", ChatFormatting.DARK_GRAY)));
+            .append(colored(" | " + (WarpHandler.Source.values().length + 3 - installed) + " not installed", ChatFormatting.DARK_GRAY)));
         if (!detailed) {
             statusMessage(source, colored("Details: /squaremarkers status details", ChatFormatting.AQUA));
             return 1;
@@ -178,6 +182,7 @@ final class MarkerCommands {
         integrationMessage(source, "Open Parties and Claims", SquareMarkers.isOpacInstalled(), SquareMarkers.isOpacEnabled());
         for (var warp : WarpHandler.Source.values()) integrationMessage(source, warp.label(), warp.installed(), warp.enabled());
         integrationMessage(source, "Waystones", WaystonesHandler.installed(), WaystonesHandler.enabled());
+        integrationMessage(source, "World Border", WorldBorderHandler.installed(), WorldBorderHandler.enabled());
         statusMessage(source, colored("Layer entries (OPAC counts polygon fragments)", ChatFormatting.AQUA));
         layers.stream().limit(30).forEach(layer -> statusMessage(source,
             colored(layer.worldIdentifier + " / ", ChatFormatting.DARK_GRAY)

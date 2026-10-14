@@ -1,8 +1,6 @@
 package net.squaremarkers.core;
 
 import java.util.EnumMap;
-import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -32,7 +30,8 @@ public enum FeedbackMessages {
     DEATH_TIME("death", "time", "Time of death ({timezone}): {time}"),
     PORTAL_GO_TO_END("portal", "go-to-end", "Go to The End"),
     PORTAL_GO_TO_NETHER("portal", "go-to-nether", "Go to Nether"),
-    PORTAL_GO_TO_OVERWORLD("portal", "go-to-overworld", "Go to Overworld");
+    PORTAL_GO_TO_OVERWORLD("portal", "go-to-overworld", "Go to Overworld"),
+    PORTAL_GO_TO_END_GATEWAY("portal", "go-to-end-gateway", "Go to End Gateway");
 
     private static final Pattern PLACEHOLDERS = Pattern.compile("\\{(type|name|label|x|y|z|timezone|time)}");
     private static Map<FeedbackMessages, String> templates = Map.of();
@@ -73,15 +72,7 @@ public enum FeedbackMessages {
             + "# Death time: {timezone} = configured timezone label, {time} = yyyy-MM-dd HH:mm:ss.\n"
             + "# Placeholders only apply to the matching templates; sign and portal button text has no placeholders.\n"
             + "messages:\n";
-        return addMissingOptions(config);
+        return ConfigMigration.addMessageOptions(config);
     }
 
-    static String addMissingOptions(String config) {
-        String newline = config.contains("\r\n") ? "\r\n" : config.contains("\r") && !config.contains("\n") ? "\r" : "\n";
-        Map<String, List<WarpConfigMigration.Option>> groups = new LinkedHashMap<>();
-        for (var message : values()) groups.computeIfAbsent(message.group, unused -> new java.util.ArrayList<>())
-            .add(new WarpConfigMigration.Option(message.key, "\"" + message.defaultText + "\""));
-        for (var group : groups.entrySet()) config = WarpConfigMigration.addSection(config, "messages", group.getKey(), newline, group.getValue());
-        return config;
-    }
 }

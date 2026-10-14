@@ -1,7 +1,7 @@
 package net.squaremarkers.fabric.compat.waystones;
 
 import net.squaremarkers.core.helpers.HtmlHelper;
-import net.squaremarkers.core.layers.primitive.MarkerLayer;
+import net.squaremarkers.core.layers.primitive.SnapshotMarkerLayer;
 import net.squaremarkers.core.markers.IconMarkerBuilder;
 import net.squaremarkers.core.markers.MarkerBuilder;
 import net.squaremarkers.core.registries.Icons;
@@ -9,12 +9,9 @@ import net.squaremarkers.core.registries.Layers;
 import net.squaremarkers.fabric.FabricMarkersConfig;
 import xyz.jpenilla.squaremap.api.MapWorld;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
-public final class WaystoneMarkerLayer extends MarkerLayer<WaystonePoint> {
-    private final Map<UUID, WaystonePoint> rendered = new HashMap<>();
+public final class WaystoneMarkerLayer extends SnapshotMarkerLayer<UUID, WaystonePoint> {
 
     public WaystoneMarkerLayer(MapWorld world) {
         super(Layers.Keys.WAYSTONES, Layers.Labels.WAYSTONES, world,
@@ -26,22 +23,7 @@ public final class WaystoneMarkerLayer extends MarkerLayer<WaystonePoint> {
         sync(WaystonesHandler.current());
     }
 
-    public void sync(Map<UUID, WaystonePoint> waystones) {
-        rendered.keySet().removeIf(id -> {
-            WaystonePoint point = waystones.get(id);
-            if (point != null && point.dimension().equals(worldIdentifier)) {
-                return false;
-            }
-            removeMarker(id.toString());
-            return true;
-        });
-        waystones.forEach((id, point) -> {
-            if (point.dimension().equals(worldIdentifier) && !point.equals(rendered.get(id))) {
-                loadMarker(point);
-                rendered.put(id, point);
-            }
-        });
-    }
+    protected String dimension(WaystonePoint point) { return point.dimension(); }
 
     @Override
     public MarkerBuilder<?> createBuilder(WaystonePoint point) {

@@ -122,13 +122,8 @@ public class SignsMarkerLayer extends StoredMarkerLayer<ISignMarker, ISignMarker
 	}
 
 	@Override
-	protected @Nullable String createPermanentBottomTooltip(ISignMarker signMarker) {
-		return MarkersConfig.SIGN_MARKERS_ALWAYS_SHOW_TEXT ? createContent(signMarker) : null;
-	}
-
-	@Override
 	protected @Nullable String createTooltip(ISignMarker signMarker) {
-		return !MarkersConfig.SIGN_MARKERS_ALWAYS_SHOW_TEXT ? createContent(signMarker) : null;
+		return createContent(signMarker);
 	}
 
 	@Override

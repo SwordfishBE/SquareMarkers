@@ -5,51 +5,19 @@ import net.squaremarkers.core.FeedbackMessages;
 import net.squaremarkers.core.helpers.HtmlHelper;
 import net.squaremarkers.core.helpers.WorldHelpers;
 import net.squaremarkers.core.interfaces.entities.ISimpleMarker;
-import net.squaremarkers.core.layers.primitive.SimpleMarkerLayer;
-import net.squaremarkers.core.objects.InteractionResult;
+import net.squaremarkers.core.layers.primitive.NamedPortalMarkerLayer;
 import net.squaremarkers.core.registries.Icons;
 import net.squaremarkers.core.registries.Layers;
 import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.NotNull;
-import org.jspecify.annotations.Nullable;
 import xyz.jpenilla.squaremap.api.MapWorld;
 
-public class NetherPortalMarkerLayer extends SimpleMarkerLayer {
-    private final java.util.Set<String> unnamedMarkers = new java.util.HashSet<>();
-
-    @Override public void load() { unnamedMarkers.clear(); super.load(); }
-    @Override public void close() { unnamedMarkers.clear(); super.close(); }
-
-    @Override public net.squaremarkers.core.markers.MarkerBuilder<?> createBuilder(ISimpleMarker marker) {
-        if (marker.getName() == null || marker.getName().isBlank()) unnamedMarkers.add(marker.getKey());
-        else unnamedMarkers.remove(marker.getKey());
-        return super.createBuilder(marker);
-    }
-
-    @Override protected boolean additionallyHidden(String identity) {
-        return MarkersConfig.NETHER_PORTAL_MARKERS_ONLY_SHOW_NAMED && unnamedMarkers.contains(identity);
-    }
-
-    @Override public InteractionResult remove(int x, int y, int z) {
-        unnamedMarkers.remove(toMarkerKey(x, y, z));
-        return super.remove(x, y, z);
-    }
-
-    @Override public void removeMarker(ISimpleMarker marker) {
-        unnamedMarkers.remove(marker.getKey());
-        super.removeMarker(marker);
-    }
+public class NetherPortalMarkerLayer extends NamedPortalMarkerLayer {
+    @Override protected boolean renameEnabled() { return MarkersConfig.NETHER_PORTAL_MARKERS_RENAME; }
+    @Override protected boolean onlyShowNamed() { return MarkersConfig.NETHER_PORTAL_MARKERS_ONLY_SHOW_NAMED; }
 
     public NetherPortalMarkerLayer(@NotNull MapWorld world) {
         super(Icons.Keys.NETHER_PORTAL, Layers.Keys.NETHER_PORTALS, Layers.Labels.NETHER_PORTALS, Layers.Tooltips.NETHER_PORTALS, world, MarkersConfig.NETHER_PORTAL_MARKERS_PRIORITY);
-    }
-
-    @Override
-    public InteractionResult setName(int x, int y, int z, String newName) {
-        if (!MarkersConfig.NETHER_PORTAL_MARKERS_RENAME) {
-            return interact(x, y, z);
-        }
-        return super.setName(x, y, z, newName);
     }
 
     @Override
@@ -67,14 +35,6 @@ public class NetherPortalMarkerLayer extends SimpleMarkerLayer {
                 relativeX, relativeZ,
                 buttonText(worldKey)
         );
-    }
-
-    @Override
-    protected @Nullable String createPermanentBottomTooltip(ISimpleMarker object) {
-        if (MarkersConfig.NETHER_PORTAL_MARKERS_ALWAYS_SHOW_NAME && object.getName() != null) {
-            return createTooltip(object);
-        }
-        return null;
     }
 
     @Override

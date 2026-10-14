@@ -14,9 +14,8 @@ In addition to the functionality provided by Pl3xMarkers, it can display additio
 ## ✨ Features
 
 - Player-created area markers with configurable entry/exit and persistent in-game names
-- Nether portal markers, optionally showing only named portals
-- End portal markers
-- End gateway markers
+- Nether portal, End portal and End gateway markers
+- Renameable Nether portal, End portal and End gateway markers, optionally showing only named portals
 - Lightning strike markers with a configurable lifetime
 - Beacon markers
 - Sign markers
@@ -26,6 +25,7 @@ In addition to the functionality provided by Pl3xMarkers, it can display additio
 - OPAC subclaims have separate areas with their own names and colors
 - Optional live warp markers from Fabric Essentials, Essential Commands, and HuskHomes
 - Optional live Waystones markers, including sharestones
+- Optional Serilum World Border outlines for Overworld, Nether and End
 - Optional last-death markers with configurable expiry
 - Persistently hide/show individual markers and inspect status through admin commands
 - Configurable layer priorities, labels, feedback, and individual marker types
@@ -63,14 +63,23 @@ All area messages respect `settings.feedback.messages`; presence text uses `mess
 ## 🔨 Other automatic markers
 
 - Travel through a Nether portal to register it.
-- Rename a Nether portal by right-clicking its purple blocks with a named name tag in either hand. Right-clicking a named portal displays its name in the action bar, including with an empty hand.
 - Activate a beacon to register it.
 - Place and edit a sign directly above a lodestone to register it.
 - End portals, end gateways, and lightning strikes are detected automatically.
+- Rename a Nether portal, End portals or End gateways by right-clicking its portal blocks with a named name tag in either hand. Right-clicking a named portal displays its name in the action bar, including with an empty hand.
 
 Set `marker-settings.nether-portals.only-show-named: true` to hide unnamed Nether portals from the web map.
 They remain registered and stored; renaming one makes it visible.
 Renaming does not override manual hiding; the marker `show` command does not override the named-only filter.
+
+---
+
+## World Border integration
+
+When [World Border by Serilum](https://modrinth.com/mod/world-border) is installed, SquareMarkers displays its enabled boundaries in a separate **World Border (Serilum)** layer.
+Rectangular and off-center bounds are supported in the vanilla Overworld, Nether and End, matching the dimensions supported by that mod.
+
+squaremap's separate vanilla worldborder layer is left unchanged. If you only want the mod's outline, disable the vanilla layer in squaremap's config yourself.
 
 ---
 
@@ -79,7 +88,7 @@ Renaming does not override manual hiding; the marker `show` command does not ove
 ### Configurable feedback messages
 
 Player feedback can be customized under the root `messages` section in `config/squaremarkers/config.yml`.
-The 19 player-feedback templates and 6 map-text templates have English defaults.
+The 19 player-feedback templates and 7 map-text templates have English defaults.
 Existing configuration files receive missing templates without replacing custom values or other settings. Run `/squaremarkers reload` to apply edits.
 
 ```yaml
@@ -114,6 +123,7 @@ messages:
     go-to-end: "Go to The End"
     go-to-nether: "Go to Nether"
     go-to-overworld: "Go to Overworld"
+    go-to-end-gateway: "Go to End Gateway"
 ```
 
 `{type}` is the marker type, `{name}` is the marker or entered/left area's name, and `{label}` is the area label for point operations.

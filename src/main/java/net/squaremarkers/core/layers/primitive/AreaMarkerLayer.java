@@ -112,13 +112,13 @@ public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerR
 	}
 
 	@Override
-	protected @Nullable String createPermanentCenteredTooltip(IAreaMarker object) {
-		return MarkersConfig.AREA_MARKERS_MARKERS_ALWAYS_SHOW_NAME ? createContent(object) : null;
+    protected @Nullable String createTooltip(IAreaMarker object) {
+        return MarkersConfig.AREA_MARKERS_LABEL_MODE == MarkersConfig.LabelMode.HOVER ? createContent(object) : null;
 	}
 
 	@Override
 	protected @Nullable String createPopup(IAreaMarker object) {
-		return !MarkersConfig.AREA_MARKERS_MARKERS_ALWAYS_SHOW_NAME ? createContent(object) : null;
+        return MarkersConfig.AREA_MARKERS_LABEL_MODE == MarkersConfig.LabelMode.CLICK ? createContent(object) : null;
 	}
 
 	@Override

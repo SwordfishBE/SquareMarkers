@@ -295,7 +295,7 @@ public final class OPACAreaMarkerLayer extends MarkerLayer<IMarker> {
             if (!(renderedMarker(key) instanceof Polygon previous)) continue;
             var options = previous.markerOptions().asBuilder()
                 .fillColor(renderedColor).strokeColor(renderedColor);
-            if (FabricMarkersConfig.OPAC_MARKERS_ALWAYS_SHOW_NAME) {
+            if (FabricMarkersConfig.OPAC_MARKERS_LABEL_MODE == net.squaremarkers.core.MarkersConfig.LabelMode.HOVER) {
                 options.hoverTooltip(label);
             } else {
                 options.clickTooltip(label);
@@ -328,8 +328,8 @@ public final class OPACAreaMarkerLayer extends MarkerLayer<IMarker> {
         AreaMarkerBuilder markerBuilder = AreaMarkerBuilder.newAreaMarker(claim.key, polygon.exterior(), polygon.holes())
                 .fill(claim.color)
                 .stroke(claim.color);
-            if (FabricMarkersConfig.OPAC_MARKERS_ALWAYS_SHOW_NAME) {
-                markerBuilder.addPermanentCenteredTooltip(HtmlHelper.sanitize(claim.name));
+            if (FabricMarkersConfig.OPAC_MARKERS_LABEL_MODE == net.squaremarkers.core.MarkersConfig.LabelMode.HOVER) {
+                markerBuilder.addTooltip(HtmlHelper.sanitize(claim.name));
             } else {
                 markerBuilder.addPopup(HtmlHelper.sanitize(claim.name));
             }

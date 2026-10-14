@@ -16,6 +16,25 @@ import java.awt.Color;
 import static org.junit.jupiter.api.Assertions.*;
 
 class OpacSubclaimsTest {
+    @Test void labelModeAppliesToNewPolygonsAndMetadataUpdates() {
+        var previous = net.squaremarkers.fabric.FabricMarkersConfig.OPAC_MARKERS_LABEL_MODE;
+        try {
+            for (var mode : net.squaremarkers.core.MarkersConfig.LabelMode.values()) {
+                net.squaremarkers.fabric.FabricMarkersConfig.OPAC_MARKERS_LABEL_MODE = mode;
+                var layer = new OPACAreaMarkerLayer(world(), visibility());
+                layer.addChunk(chunk(0, 0, "farm", "Farm", 1), true);
+                var options = layer.provider().getMarkers().iterator().next().markerOptions();
+                boolean hover = mode == net.squaremarkers.core.MarkersConfig.LabelMode.HOVER;
+                assertEquals(hover ? "Farm - Owner&#39;s claim" : null, options.hoverTooltip());
+                assertEquals(hover ? null : "Farm - Owner&#39;s claim", options.clickTooltip());
+                layer.updateGroupMetadata(OWNER_KEY + ":farm", "Owner", "New farm", 2);
+                options = layer.provider().getMarkers().iterator().next().markerOptions();
+                assertEquals(hover ? "New farm" : null, options.hoverTooltip());
+                assertEquals(hover ? null : "New farm", options.clickTooltip());
+            }
+        } finally { net.squaremarkers.fabric.FabricMarkersConfig.OPAC_MARKERS_LABEL_MODE = previous; }
+    }
+
     @TempDir Path directory;
     private static final UUID OWNER = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final String OWNER_KEY = "OpacClaim:" + OWNER;

@@ -20,6 +20,7 @@ import net.squaremarkers.core.objects.InteractionResult;
 import net.squaremarkers.core.registries.Layers;
 import net.squaremarkers.fabric.helpers.FeedbackHelper;
 import net.squaremarkers.fabric.helpers.PortalHelper;
+import net.squaremarkers.fabric.helpers.GatewayHelper;
 import net.squaremarkers.fabric.interfaces.NetherPortalInterface;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -66,6 +67,7 @@ public class PortalProcessorMixin {
 				return;
 			}
 			result = markerLayer.add(pos.getX(), pos.getY(), pos.getZ());
+			if (world instanceof ServerLevel level) GatewayHelper.refresh(level, pos);
 		}
 		if (portalBlock.is(Blocks.END_PORTAL)) {
 			pos = PortalHelper.getEndPortalCenter(world, pos);

@@ -24,7 +24,7 @@ public final class HuskHomesWarpHandler {
     private static final AtomicBoolean QUEUED = new AtomicBoolean();
     private static final AtomicBoolean FAILED = new AtomicBoolean();
     private static final AtomicLong GENERATION = new AtomicLong();
-    private static final AtomicLong REQUEST = new AtomicLong();
+    private static final RefreshGate REFRESH = new RefreshGate();
     private static volatile MinecraftServer server;
     private static boolean registered;
 
@@ -67,14 +67,14 @@ public final class HuskHomesWarpHandler {
         if (SOURCE.enabled()) {
             refreshAsync();
         } else {
-            REQUEST.incrementAndGet();
+            REFRESH.invalidate();
             WarpHandler.clear(SOURCE);
         }
     }
 
     public static void reset() {
         GENERATION.incrementAndGet();
-        REQUEST.incrementAndGet();
+        REFRESH.invalidate();
         QUEUED.set(false);
         FAILED.set(false);
         server = null;
@@ -86,32 +86,30 @@ public final class HuskHomesWarpHandler {
         if (!SOURCE.enabled() || server == null) {
             return;
         }
-        long request = REQUEST.incrementAndGet();
+        var ticket = REFRESH.begin();
+        if (ticket == null) return;
         try {
             FabricHuskHomesAPI.getInstance().getLocalWarps().whenComplete((warps, error) -> {
-                if (error != null) {
-                    warnOnce(error);
-                    return;
-                }
-                Map<String, WarpPoint> next;
                 try {
-                    next = toPoints(warps);
-                } catch (RuntimeException exception) {
-                    warnOnce(exception);
-                    return;
-                }
-                MinecraftServer target = server;
-                if (target != null) {
-                    target.execute(() -> {
-                        if (server == target && request == REQUEST.get() && SOURCE.enabled()) {
+                    if (!REFRESH.current(ticket) || !SOURCE.enabled()) return;
+                    if (error != null) { warnOnce(error); return; }
+                    Map<String, WarpPoint> next = toPoints(warps);
+                    MinecraftServer target = server;
+                    if (target != null) target.execute(() -> {
+                        if (server == target && REFRESH.current(ticket) && SOURCE.enabled()) {
                             FAILED.set(false);
                             WarpHandler.accept(SOURCE, next);
                         }
                     });
+                } catch (RuntimeException | LinkageError exception) {
+                    if (REFRESH.current(ticket)) warnOnce(exception);
+                } finally {
+                    if (REFRESH.finish(ticket)) refreshAsync();
                 }
             });
         } catch (RuntimeException | LinkageError exception) {
-            warnOnce(exception);
+            try { if (REFRESH.current(ticket)) warnOnce(exception); }
+            finally { if (REFRESH.finish(ticket)) refreshAsync(); }
         }
     }
 
