@@ -5,9 +5,25 @@ import net.squaremarkers.core.interfaces.entities.IAreaMarker;
 import net.squaremarkers.core.interfaces.entities.IPoint;
 
 import java.util.List;
+import net.squaremarkers.core.json.entities.Point;
 
 public record PolygonBoundary(IPoint min, IPoint max, List<? extends IPoint> orderedPoints,
                               IAreaMarker areaMarker) implements IBoundary {
+
+    /** Bounds must describe the rendered polygon, including generated single-point areas. */
+    public PolygonBoundary(List<? extends IPoint> orderedPoints, IAreaMarker areaMarker) {
+        this(corner(orderedPoints, true), corner(orderedPoints, false), orderedPoints, areaMarker);
+    }
+
+    private static IPoint corner(List<? extends IPoint> points, boolean minimum) {
+        int x = minimum ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+        int z = x;
+        for (IPoint point : points) {
+            x = minimum ? Math.min(x, point.x()) : Math.max(x, point.x());
+            z = minimum ? Math.min(z, point.z()) : Math.max(z, point.z());
+        }
+        return new Point(x, 0, z);
+    }
 
 	@Override
 	public boolean contains(int x, int z) {

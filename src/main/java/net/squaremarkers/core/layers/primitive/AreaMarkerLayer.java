@@ -61,8 +61,8 @@ public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerR
 					.stroke(area.getColor());
 		}
 
-		var orderedPoints = ConvexHull.calculate(points);
-		boundaries.put(area.getKey(), new PolygonBoundary(area.getMinCorner(), area.getMaxCorner(), orderedPoints, area));
+		var orderedPoints = ConvexHull.calculateLimited(points);
+		boundaries.put(area.getKey(), new PolygonBoundary(orderedPoints, area));
 		if (!orderedPoints.isEmpty()) {
 			return AreaMarkerBuilder.newAreaMarker(area.getKey(), orderedPoints)
 					.fill(area.getColor())
@@ -98,7 +98,7 @@ public class AreaMarkerLayer extends StoredMarkerLayer<IAreaMarker, IAreaMarkerR
 					var center = sorted.get(0).middle(sorted.get(1));
 					boundary = new CircleBoundary(center, (int) Math.floor(sorted.get(0).distance(sorted.get(1)) / 2), area);
 				} else {
-					boundary = new PolygonBoundary(area.getMinCorner(), area.getMaxCorner(), ConvexHull.calculate(new ArrayList<>(points)), area);
+					boundary = new PolygonBoundary(ConvexHull.calculateLimited(points), area);
 				}
 			}
 			var polygonArea = boundary.size();

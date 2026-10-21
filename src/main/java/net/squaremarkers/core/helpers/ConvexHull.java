@@ -4,7 +4,6 @@ import net.squaremarkers.core.MarkersConfig;
 import net.squaremarkers.core.interfaces.entities.IPoint;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 
 public class ConvexHull {
@@ -25,7 +24,11 @@ public class ConvexHull {
      * @return a line of external points
      */
     public static List<IPoint> calculate(List<IPoint> points) {
-		points = limitPoints(points);
+        return calculateLimited(limitPoints(points));
+    }
+
+    /** Input is already sorted and size-limited by limitPoints. */
+    public static List<IPoint> calculateLimited(List<IPoint> points) {
 	    if (points.isEmpty()) {
 		    return points;
 	    } else if (points.size() < 2) {
@@ -64,25 +67,16 @@ public class ConvexHull {
 	}
 
 	private static List<IPoint> cluster(List<IPoint> points) {
-		while (points.size() > 1) {
-			long sumX = 0L;
-			long sumZ = 0L;
-			for (IPoint point : points) {
-				sumX += point.x();
-				sumZ += point.z();
-			}
-			int centerX = (int) (sumX / points.size());
-			int centerZ = (int) (sumZ / points.size());
-			IPoint center = points.getFirst().set(centerX, 0, centerZ);
-			IPoint furthest = points.stream()
-				.max(Comparator.comparingDouble(point -> point.distance(center)))
-				.orElse(points.getLast());
-			if (furthest.distance(center) <= getMaxRadius()) {
-				break;
-			}
-			points.remove(furthest);
-		}
-		return points;
+        FarthestPointIndex index = new FarthestPointIndex(points);
+        while (index.size() > 1) {
+            int x = index.centerX(), z = index.centerZ();
+            int furthest = index.farthest(x, z);
+            if (points.get(furthest).distance(x, z) <= getMaxRadius()) break;
+            index.remove(furthest);
+        }
+        List<IPoint> result = new ArrayList<>(index.size());
+        for (int i = 0; i < points.size(); i++) if (index.contains(i)) result.add(points.get(i));
+        return result;
 	}
 
 	private static List<IPoint> calculateInternal(List<IPoint> points) {

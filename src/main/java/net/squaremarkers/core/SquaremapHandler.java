@@ -22,6 +22,8 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import net.squaremarkers.core.helpers.Cleanup;
+import java.util.function.Consumer;
 
 public final class SquaremapHandler {
     private final Map<String, Map<String, MarkerLayer<?>>> layers = new ConcurrentHashMap<>();
@@ -49,19 +51,37 @@ public final class SquaremapHandler {
         if (removed == null) {
             return;
         }
-        removed.values().forEach(MarkerLayer::close);
-        SquaremapProvider.get().getWorldIfEnabled(xyz.jpenilla.squaremap.api.WorldIdentifier.parse(worldIdentifier))
-            .ifPresent(world -> removed.values().forEach(layer -> {
+        removed.values().forEach(layer -> {
+            String description = layer.getKey() + " in " + worldIdentifier;
+            Cleanup.run("close marker layer " + description, layer::close);
+            Cleanup.run("clear marker layer " + description, layer::clearMarkers);
+            Cleanup.run("unregister marker layer " + description, () -> {
+                MapWorld world = layer.getWorld();
                 Key key = layerKey(layer.getKey());
                 if (world.layerRegistry().hasEntry(key)) {
                     world.layerRegistry().unregister(key);
                 }
-            }));
+            });
+        });
     }
 
     public void registerMarkerLayer(LayerFactory factory) {
+        List<MapWorld> worlds = List.copyOf(SquaremapProvider.get().mapWorlds());
+        // Preserve the old constructor for active-world registrations; infer its key only once.
+        MapWorld first = null;
+        MarkerLayer<?> prepared = null;
+        if (factory.key() == null) {
+            first = worlds.stream().filter(world -> !factory.disabledFor(world)).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Provide a LayerFactory key when no matching map world is enabled"));
+            prepared = factory.create(first);
+        }
         Layers.register(factory);
-        SquaremapProvider.get().mapWorlds().forEach(world -> registerLayer(world, factory));
+        if (prepared != null) registerLayer(first, prepared);
+        for (MapWorld world : worlds) {
+            if (world == first) continue;
+            else if (factory.disabledFor(world)) unregisterLayer(world, factory.key());
+            else registerLayer(world, factory);
+        }
     }
 
     private void registerLayer(MapWorld world, LayerFactory factory) {
@@ -69,14 +89,40 @@ public final class SquaremapHandler {
             return;
         }
         MarkerLayer<?> layer = factory.create(world);
-        Key registryKey = layerKey(layer.getKey());
-        if (world.layerRegistry().hasEntry(registryKey)) {
-            world.layerRegistry().unregister(registryKey);
+        registerLayer(world, layer);
+    }
+
+    private void unregisterLayer(MapWorld world, String key) {
+        Map<String, MarkerLayer<?>> worldLayers = layers.get(world.identifier().asString());
+        MarkerLayer<?> previous = worldLayers == null ? null : worldLayers.remove(key);
+        try {
+            if (previous != null) previous.close();
+        } finally {
+            if (world.layerRegistry().hasEntry(layerKey(key))) world.layerRegistry().unregister(layerKey(key));
         }
-        world.layerRegistry().register(registryKey, layer.provider());
-        layers.computeIfAbsent(world.identifier().asString(), ignored -> new ConcurrentHashMap<>())
-            .put(layer.getKey(), layer);
-        layer.load();
+    }
+
+    private void registerLayer(MapWorld world, MarkerLayer<?> layer) {
+        Key registryKey = layerKey(layer.getKey());
+        boolean registered = false;
+        try {
+            unregisterLayer(world, layer.getKey());
+            world.layerRegistry().register(registryKey, layer.provider());
+            registered = true;
+            layers.computeIfAbsent(world.identifier().asString(), ignored -> new ConcurrentHashMap<>())
+                .put(layer.getKey(), layer);
+            layer.load();
+        } catch (RuntimeException | Error failure) {
+            var worldLayers = layers.get(world.identifier().asString());
+            if (worldLayers != null) worldLayers.remove(layer.getKey(), layer);
+            if (registered) {
+                try { world.layerRegistry().unregister(registryKey); }
+                catch (RuntimeException | Error cleanup) { failure.addSuppressed(cleanup); }
+            }
+            try { layer.close(); }
+            catch (RuntimeException | Error cleanup) { failure.addSuppressed(cleanup); }
+            throw failure;
+        }
     }
 
     public <T extends MarkerLayer<?>> T getLayer(String worldIdentifier, Class<T> layerClass, String layerKey) {
@@ -109,8 +155,14 @@ public final class SquaremapHandler {
         return layers.getOrDefault(world, Map.of()).get(key);
     }
 
+    public <T extends MarkerLayer<?>> void forEachLayer(Class<T> type, Consumer<T> action) {
+        layers.values().forEach(world -> world.values().forEach(layer -> {
+            if (type.isInstance(layer)) action.accept(type.cast(layer));
+        }));
+    }
+
     public void close() {
-        List.copyOf(layers.keySet()).forEach(this::unregisterWorld);
+        List.copyOf(layers.keySet()).forEach(world -> Cleanup.run("unregister map world " + world, () -> unregisterWorld(world)));
         layers.clear();
     }
 

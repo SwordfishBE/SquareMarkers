@@ -9,6 +9,7 @@ import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import net.squaremarkers.fabric.helpers.FeedbackHelper;
 import net.squaremarkers.fabric.helpers.PortalHelper;
+import net.squaremarkers.fabric.helpers.NetherPortalValidation;
 import net.squaremarkers.fabric.listeners.BlockListener;
 import org.spongepowered.asm.mixin.Mixin;
 
@@ -23,11 +24,12 @@ public class LevelMixin {
         BlockState oldState = level.getBlockState(pos);
         boolean breakingPortal = oldState.is(Blocks.NETHER_PORTAL) && !state.is(Blocks.NETHER_PORTAL);
         boolean breakingFrame = oldState.is(Blocks.OBSIDIAN) && !state.is(Blocks.OBSIDIAN);
-        BlockPos center = breakingPortal || breakingFrame
-            ? PortalHelper.findAffectedNetherPortalCenter(level, pos, oldState) : null;
+        PortalHelper.PortalScan scan = breakingPortal || breakingFrame
+            ? PortalHelper.scanAffectedNetherPortal(level, pos, oldState) : null;
         boolean changed = original.call(pos, state, flags, limit);
         if (changed) {
-            var result = BlockListener.onChange(level, pos, oldState, state, center);
+            var result = BlockListener.onChange(level, pos, oldState, state, scan == null ? null : scan.center());
+            if (scan != null && scan.incomplete()) NetherPortalValidation.queueAffected(level, pos);
             if (result != null) FeedbackHelper.sendFeedback(result, level, pos);
         }
         return changed;

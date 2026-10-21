@@ -2,7 +2,7 @@ package net.squaremarkers.fabric.listeners;
 
 import net.fabricmc.fabric.api.event.player.BlockEvents;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -13,8 +13,6 @@ import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.portal.PortalShape;
 import net.minecraft.world.phys.BlockHitResult;
 import net.squaremarkers.core.SquareMarkersCore;
 import net.squaremarkers.core.layers.NetherPortalMarkerLayer;
@@ -25,7 +23,6 @@ import net.squaremarkers.core.registries.Layers;
 import net.squaremarkers.fabric.helpers.FeedbackHelper;
 import net.squaremarkers.fabric.helpers.PortalHelper;
 import net.squaremarkers.fabric.helpers.GatewayHelper;
-import net.squaremarkers.fabric.interfaces.NetherPortalInterface;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
@@ -41,6 +38,7 @@ public class UseItemOnListener implements BlockEvents.UseItemOnCallback, BlockEv
 			return interactionHand == InteractionHand.MAIN_HAND ? InteractionResult.PASS : null;
 		}
 		if (itemStack.isEmpty()) return null;
+		if (portalLayer(level, blockState) == null) return null;
 		var portalCenter = getPortalCenter(level, blockPos, blockState);
 		if (portalCenter == null) {
 			return null;
@@ -55,6 +53,7 @@ public class UseItemOnListener implements BlockEvents.UseItemOnCallback, BlockEv
 	public @Nullable InteractionResult useWithoutItem(@NonNull BlockState blockState, @NonNull Level level, @NonNull BlockPos blockPos, @NonNull Player player, @NonNull BlockHitResult blockHitResult) {
 		if (!(player instanceof ServerPlayer serverPlayer)) return null;
 		if (preferredHand(hasNamedTag(player.getMainHandItem()), hasNamedTag(player.getOffhandItem())) != InteractionHand.MAIN_HAND) return null;
+		if (!isPortal(blockState) || portalLayer(level, blockState) == null) return null;
 		var center = getPortalCenter(level, blockPos, blockState);
 		return center == null ? null : usePortal(portalLayer(level, blockState), serverPlayer, InteractionHand.MAIN_HAND, center);
 	}
@@ -109,9 +108,8 @@ public class UseItemOnListener implements BlockEvents.UseItemOnCallback, BlockEv
 		if (!blockState.is(Blocks.NETHER_PORTAL)) {
 			return null;
 		}
-		Direction.Axis axis = blockState.getValue(BlockStateProperties.HORIZONTAL_AXIS);
-		var shape = PortalShape.findAnyShape(level, pos, axis);
-		return shape instanceof NetherPortalInterface portal ? portal.squareMarkers$getPortalCenter() : null;
+		return level instanceof ServerLevel serverLevel
+			? PortalHelper.getLoadedNetherPortalCenter(serverLevel, pos, blockState) : null;
 	}
 
 	private static boolean isPortal(BlockState state) {

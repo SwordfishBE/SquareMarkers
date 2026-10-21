@@ -30,6 +30,8 @@ import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.minecraft.server.level.ServerPlayer;
 import net.squaremarkers.fabric.helpers.AreaFeedbackHandler;
 import net.squaremarkers.fabric.helpers.GatewayHelper;
+import net.squaremarkers.fabric.helpers.NetherPortalValidation;
+import net.squaremarkers.core.helpers.Cleanup;
 import net.squaremarkers.fabric.compat.worldborder.WorldBorderHandler;
 import net.squaremarkers.fabric.compat.worldborder.WorldBorderMarkerLayer;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -56,21 +58,21 @@ public class SquareMarkers implements DedicatedServerModInitializer {
     public void onInitializeServer() {
 		// register layers
 		if (isOpacInstalled()) {
-			Layers.register(OPACAreaMarkerLayer::new, unused -> isOpacEnabled());
+			Layers.register(Layers.Keys.OPAC, OPACAreaMarkerLayer::new, unused -> isOpacEnabled());
 		}
 		for (WarpHandler.Source source : WarpHandler.Source.values()) {
-			Layers.register(world -> new WarpMarkerLayer(world, source), unused -> source.enabled());
+			Layers.register(source.layerKey(), world -> new WarpMarkerLayer(world, source), unused -> source.enabled());
 		}
 		if (HuskHomesWarpHandler.installed()) {
 			HuskHomesWarpHandler.register();
 		}
 		if (WaystonesHandler.installed()) {
 			WaystonesHandler.register();
-			Layers.register(WaystoneMarkerLayer::new, unused -> WaystonesHandler.enabled());
+			Layers.register(Layers.Keys.WAYSTONES, WaystoneMarkerLayer::new, unused -> WaystonesHandler.enabled());
 		}
 		// initialize core
 		if (WorldBorderHandler.installed()) {
-			Layers.register(WorldBorderMarkerLayer::new, world -> WorldBorderHandler.enabled()
+			Layers.register(Layers.Keys.WORLD_BORDER, WorldBorderMarkerLayer::new, world -> WorldBorderHandler.enabled()
 				&& WorldBorderHandler.supports(world.identifier().asString()));
 		}
 	    storage = new JsonStorage("config/squaremarkers");
@@ -103,42 +105,49 @@ public class SquareMarkers implements DedicatedServerModInitializer {
         });
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
 			AreaFeedbackHandler.clear();
+			NetherPortalValidation.reset();
 			ticks = 0;
 			SquareMarkersCore.server(server);
 			SquareMarkersCore.onStarted();
         });
         ServerLifecycleEvents.SERVER_STARTED.register(server -> {
             GatewayHelper.refreshLoaded(server);
+            NetherPortalValidation.queueAll();
             WorldBorderHandler.refresh();
             if (HuskHomesWarpHandler.installed()) {
                 HuskHomesWarpHandler.start(server);
             }
         });
         ServerLifecycleEvents.SERVER_STOPPED.register(unused -> {
-			AreaFeedbackHandler.clear();
+			Cleanup.run("clear area feedback", AreaFeedbackHandler::clear);
+			NetherPortalValidation.reset();
 			if (HuskHomesWarpHandler.installed()) {
-				HuskHomesWarpHandler.reset();
+				Cleanup.run("reset HuskHomes integration", HuskHomesWarpHandler::reset);
 			}
-			WarpHandler.reset();
-			WorldBorderHandler.reset();
+			Cleanup.run("reset warp integration", WarpHandler::reset);
+			Cleanup.run("reset world border integration", WorldBorderHandler::reset);
 			if (WaystonesHandler.installed()) {
-				WaystonesHandler.reset();
+				Cleanup.run("reset Waystones integration", WaystonesHandler::reset);
 			}
 			if (isOpacInstalled()) {
-				OpacHandler.reset();
+				Cleanup.run("reset OPAC integration", OpacHandler::reset);
 			}
 			SquareMarkersCore.onDisable();
 		});
 		ServerLevelEvents.LOAD.register((server, level) ->
 			xyz.jpenilla.squaremap.api.SquaremapProvider.get()
 				.getWorldIfEnabled(xyz.jpenilla.squaremap.api.WorldIdentifier.parse(level.dimension().identifier().toString()))
-				.ifPresent(SquareMarkersCore.squaremapHandler()::registerWorld)
+				.ifPresent(world -> {
+                    SquareMarkersCore.squaremapHandler().registerWorld(world);
+                    NetherPortalValidation.queueWorld(world.identifier().asString());
+                })
 		);
 		ServerLevelEvents.UNLOAD.register((server, level) ->
 			SquareMarkersCore.squaremapHandler().unregisterWorld(level.dimension().identifier().toString())
 		);
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			AreaFeedbackHandler.tick(server);
+            NetherPortalValidation.flush();
             if (isOpacEnabled()) OpacHandler.flushPending();
 			if (WaystonesHandler.installed()) {
 				WaystonesHandler.flushPending(server);
@@ -166,7 +175,10 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 				.then(Commands.literal("reload").executes(context -> reload(context.getSource())))
 		));
 		var portalInteractions = new UseItemOnListener();
-		ServerChunkEvents.CHUNK_LOAD.register((level, chunk, newChunk) -> GatewayHelper.onChunkLoad(level, chunk));
+		ServerChunkEvents.CHUNK_LOAD.register((level, chunk, newChunk) -> {
+            GatewayHelper.onChunkLoad(level, chunk);
+            NetherPortalValidation.onChunkLoad(level, chunk);
+        });
 		ServerPlayConnectionEvents.DISCONNECT.register((handler, server) -> AreaFeedbackHandler.remove(handler.player.getUUID()));
 		BlockEvents.USE_ITEM_ON.register(portalInteractions);
 		BlockEvents.USE_WITHOUT_ITEM.register(portalInteractions);
@@ -188,6 +200,7 @@ public class SquareMarkers implements DedicatedServerModInitializer {
 			return 0;
 		}
 		SquareMarkersCore.reloadMarkers();
+		NetherPortalValidation.queueAll();
 		GatewayHelper.refreshLoaded(SquareMarkersCore.server());
 		WorldBorderHandler.refresh();
 		if (HuskHomesWarpHandler.installed()) {

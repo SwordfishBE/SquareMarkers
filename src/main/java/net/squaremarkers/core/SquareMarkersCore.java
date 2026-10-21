@@ -6,6 +6,7 @@ import net.squaremarkers.core.interfaces.api.IApi;
 import net.minecraft.server.MinecraftServer;
 
 import java.nio.file.Path;
+import net.squaremarkers.core.helpers.Cleanup;
 
 public final class SquareMarkersCore {
     private static final SquaremapHandler SQUAREMAP_HANDLER = new SquaremapHandler();
@@ -45,15 +46,16 @@ public final class SquareMarkersCore {
     }
 
     public static void onDisable() {
-        SQUAREMAP_HANDLER.close();
-        DeathMarkers.stop();
-        VISIBILITY.clearRuntime();
-        if (storage != null) {
-            storage.close();
+        try {
+            Cleanup.run("close map layers", SQUAREMAP_HANDLER::close);
+            Cleanup.run("save death markers", DeathMarkers::stop);
+            Cleanup.run("clear marker visibility", VISIBILITY::clearRuntime);
+            if (storage != null) Cleanup.run("close marker storage", storage::close);
+        } finally {
+            storage = null;
+            server = null;
+            reloadConfig = MarkersConfig::reload;
         }
-        storage = null;
-        server = null;
-        reloadConfig = MarkersConfig::reload;
     }
 
     public static void reloadMarkers() {
