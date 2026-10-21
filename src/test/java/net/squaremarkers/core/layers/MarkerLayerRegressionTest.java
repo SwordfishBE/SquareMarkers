@@ -90,6 +90,19 @@ class MarkerLayerRegressionTest {
     }
 
     @Test
+    void singleBannerFeedbackCoversItsRenderedTriangleIncludingAfterReload() {
+        SquareMarkersCore.onInitialize(new JsonStorage(directory.toString()), null, () -> {});
+        var layer = new AreaMarkerLayer(world());
+        layer.addPoint("Home", 123, 100, 65, 100);
+        for (int pass = 0; pass < 2; pass++) {
+            assertTrue(layer.getContaining(100, 101).isPresent());
+            assertTrue(layer.getContaining(102, 104).isPresent());
+            assertTrue(layer.getContaining(108, 92).isEmpty());
+            layer.load();
+        }
+    }
+
+    @Test
     void presenceOnlyAreasKeepBoundariesAndInvalidateStationaryChecksWhenEdited() {
         var enter = net.squaremarkers.core.MarkersConfig.AREA_ON_ENTER;
         var leave = net.squaremarkers.core.MarkersConfig.AREA_ON_LEAVE;

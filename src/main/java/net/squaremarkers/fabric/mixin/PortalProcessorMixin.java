@@ -1,7 +1,6 @@
 package net.squaremarkers.fabric.mixin;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -9,8 +8,6 @@ import net.minecraft.world.entity.PortalProcessor;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
-import net.minecraft.world.level.portal.PortalShape;
 import net.minecraft.world.level.portal.TeleportTransition;
 import net.squaremarkers.core.MarkersConfig;
 import net.squaremarkers.core.SquareMarkersCore;
@@ -21,7 +18,6 @@ import net.squaremarkers.core.registries.Layers;
 import net.squaremarkers.fabric.helpers.FeedbackHelper;
 import net.squaremarkers.fabric.helpers.PortalHelper;
 import net.squaremarkers.fabric.helpers.GatewayHelper;
-import net.squaremarkers.fabric.interfaces.NetherPortalInterface;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -52,12 +48,17 @@ public class PortalProcessorMixin {
 
 	@Unique
 	private void tryCreateMarker(Level world, BlockPos pos, Entity entity) {
-		BlockState portalBlock = world.getBlockState(pos);
+		if (!(world instanceof ServerLevel level)) return;
+		BlockState portalBlock = PortalHelper.loadedState(level, pos);
+		if (portalBlock == null) return;
 		InteractionResult result = InteractionResult.skip();
-		if (portalBlock.is(Blocks.NETHER_PORTAL)) {
-			Direction.Axis axis = portalBlock.getValue(BlockStateProperties.HORIZONTAL_AXIS);
-			var portal = (NetherPortalInterface) PortalShape.findAnyShape(world, pos, axis);
-			portal.squareMarkers$createMarker(world);
+		if (portalBlock.is(Blocks.NETHER_PORTAL) && PortalHelper.hasNetherPortalLayer(level)) {
+			BlockPos center = PortalHelper.getLoadedNetherPortalCenter(level, pos, portalBlock);
+			if (center != null) {
+				var layer = SquareMarkersCore.squaremapHandler().getLayer(world.dimension().identifier().toString(),
+					net.squaremarkers.core.layers.NetherPortalMarkerLayer.class, Layers.Keys.NETHER_PORTALS);
+				FeedbackHelper.sendFeedback(layer.add(center.getX(), center.getY(), center.getZ()), world, center);
+			}
 		}
 		if (portalBlock.is(Blocks.END_GATEWAY)) {
 			var markerLayer = SquareMarkersCore.api()
@@ -67,10 +68,11 @@ public class PortalProcessorMixin {
 				return;
 			}
 			result = markerLayer.add(pos.getX(), pos.getY(), pos.getZ());
-			if (world instanceof ServerLevel level) GatewayHelper.refresh(level, pos);
+			GatewayHelper.refresh(level, pos);
 		}
 		if (portalBlock.is(Blocks.END_PORTAL)) {
 			pos = PortalHelper.getEndPortalCenter(world, pos);
+			if (pos == null) return;
 			var markerLayer = SquareMarkersCore.api()
 					.getWorld(world.dimension().identifier().toString())
 					.getLayer(EndPortalMarkerLayer.class, Layers.Keys.END_PORTALS);

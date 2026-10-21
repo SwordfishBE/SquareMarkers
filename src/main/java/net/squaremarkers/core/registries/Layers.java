@@ -8,7 +8,8 @@ import net.squaremarkers.core.layers.primitive.MarkerLayer;
 import net.squaremarkers.core.objects.LayerFactory;
 import org.intellij.lang.annotations.Language;
 
-import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -16,54 +17,70 @@ import xyz.jpenilla.squaremap.api.MapWorld;
 
 public class Layers {
 
-	private static final Set<LayerFactory> ALL = new HashSet<>(Set.of(
-            new LayerFactory(DeathMarkerLayer::new, unused -> MarkersConfig.DEATH_MARKERS_ENABLED),
+	private static final Map<String, LayerFactory> ALL = new LinkedHashMap<>();
+    static {
+        java.util.List.of(
+            new LayerFactory(Keys.DEATHS, DeathMarkerLayer::new, unused -> MarkersConfig.DEATH_MARKERS_ENABLED),
 			new LayerFactory(
+					Keys.BEACONS,
 					BeaconMarkerLayer::new,
 					_ -> MarkersConfig.BEACON_MARKERS_ENABLED
 			),
 			new LayerFactory(
+					Keys.END_GATEWAYS,
 					EndGatewayMarkerLayer::new,
 					world -> MarkersConfig.END_GATEWAY_MARKERS_ENABLED && WorldHelpers.isEnd(world)
 			),
 			new LayerFactory(
+					Keys.END_PORTALS,
 					EndPortalMarkerLayer::new,
 					world -> MarkersConfig.END_PORTAL_MARKERS_ENABLED && WorldHelpers.isOverworld(world)
 			),
 			new LayerFactory(
+					Keys.NETHER_PORTALS,
 					NetherPortalMarkerLayer::new,
 					world -> MarkersConfig.NETHER_PORTAL_MARKERS_ENABLED && (WorldHelpers.isOverworld(world) || WorldHelpers.isNether(world))
 			),
 			new LayerFactory(
+					Keys.AREAS,
 					AreaMarkerLayer::new,
 					_ -> MarkersConfig.AREA_MARKERS_ENABLED
 			),
 			new LayerFactory(
+					Keys.SIGNS,
 					SignsMarkerLayer::new,
 					_ -> MarkersConfig.SIGN_MARKERS_ENABLED
 			),
 			new LayerFactory(
+					Keys.LIGHTNING,
 					LightningMarkerLayer::new,
 					world -> MarkersConfig.LIGHTNING_MARKERS_ENABLED && WorldHelpers.isOverworld(world)
 			),
-			new LayerFactory(
-					CrossDimensionPlayerMarkerLayer::new,
-					world ->
-							MarkersConfig.PLAYERS_NETHER_IN_OVERWORLD && WorldHelpers.isOverworld(world)
-									|| MarkersConfig.PLAYERS_OVERWORLD_IN_NETHER && WorldHelpers.isNether(world)
-			)
-	));
+            new LayerFactory(Keys.NETHER_PLAYERS, CrossDimensionPlayerMarkerLayer::new,
+                world -> MarkersConfig.PLAYERS_NETHER_IN_OVERWORLD && WorldHelpers.isOverworld(world)),
+            new LayerFactory(Keys.OVERWORLD_PLAYERS, CrossDimensionPlayerMarkerLayer::new,
+                world -> MarkersConfig.PLAYERS_OVERWORLD_IN_NETHER && WorldHelpers.isNether(world))
+        ).forEach(Layers::register);
+    }
 
 	public static void register(Function<MapWorld, MarkerLayer<?>> builder, Predicate<MapWorld> predicate) {
-		register(new LayerFactory(builder, predicate));
+		net.squaremarkers.core.SquareMarkersCore.squaremapHandler().registerMarkerLayer(new LayerFactory(builder, predicate));
 	}
 
+    public static void register(String key, Function<MapWorld, MarkerLayer<?>> builder, Predicate<MapWorld> predicate) {
+        register(new LayerFactory(key, builder, predicate));
+    }
+
 	public static void register(LayerFactory factory) {
-		ALL.add(factory);
+        if (factory.key() == null) {
+            net.squaremarkers.core.SquareMarkersCore.squaremapHandler().registerMarkerLayer(factory);
+            return;
+        }
+		ALL.put(factory.key(), factory);
 	}
 
 	public static Set<LayerFactory> getAll() {
-		return ALL;
+		return Set.copyOf(ALL.values());
 	}
 
 	public static class Keys {
